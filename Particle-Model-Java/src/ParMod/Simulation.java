@@ -6,22 +6,39 @@ import java.awt.Graphics2D;
 import tCode.RenderableObject;
 import tools.RandTools;
 
+/**
+ * 
+ * @author Sebastian Troy
+ */
 public class Simulation extends RenderableObject
 	{
-		// The simulation takes place within a cuboid with the following
-		// parameters
-		int x = 10, y = 35, scaleWidth = 150, scaleHeight = 12;
+		// The simulation takes place within a cuboid with the following parameters
 		int width = 1; // The length of the simulation's short sides
 		int depth = 50; // The length of the simualtion's long sides
-		double zoom = 20, tilt = 30;
 
+		// Every particle being modelled is stored here.
 		Particle[] particles;
+		
+		// The simulation is subdivided into chunks which contain localised information.
+		Chunk[/*x*/][/*y*/][/*z*/] chunks;
 
+		/**
+		 * 
+		 * @param numParticles
+		 */
 		Simulation(int numParticles)
 			{
 				super();
 
+				// allocate memory for the particles array
 				particles = new Particle[numParticles];
+				
+				// allocate memory for the chunks array
+				for (int x = 0; x < 100; x++)
+					for (int y = 0; y < 500; y++)
+						for (int z = 0; z < 100; z++)
+							chunks[x][y][z] = new Chunk();
+					
 			}
 
 		@Override
@@ -39,11 +56,6 @@ public class Simulation extends RenderableObject
 		@Override
 		public void tick(double secondsPassed)
 			{
-				if (Main.input.getKeyState(38) == true)
-					tilt += 10 * secondsPassed;
-				if (Main.input.getKeyState(40) == true)
-					tilt -= 10 * secondsPassed;
-
 				for (int i = 0; i < particles.length; i++)
 					{
 						// If particle hasn't sunk yet
@@ -80,57 +92,30 @@ public class Simulation extends RenderableObject
 			}
 
 		/**
-		 * This method displays some basic information about the ongoing
-		 * simulation and gives options to view more in depth graphs or to view
-		 * the simulation in real-time.
+		 *
 		 */
 		@Override
 		protected void render(Graphics2D g)
 			{
+				// Clear the canvas
 				g.setColor(Color.BLACK);
 				g.fillRect(0, 0, Main.canvasWidth, Main.canvasHeight);
 
 				// TODO create options to view graphs of data
 
-				// The following code renders the water column and particles
+				// Visualise the particles in the water column
+				Main.graphicalOutput.drawWaterColumn(g);
+			}
 
-				// Draw the wire frame that sits behind the particles
-				g.setColor(Color.GRAY);
-				// Top left
-				g.drawLine(this.x, this.y, this.x + scaleWidth, this.y - (int) tilt);
-				// Top right
-				g.drawLine(this.x + 2 * scaleWidth, this.y, this.x + scaleWidth, this.y - (int) tilt);
-				// Back centre
-				g.drawLine(this.x + scaleWidth, this.y - (int) tilt, this.x + scaleWidth, this.y - (int) tilt + (50 * scaleHeight));
-				// Bottom left
-				g.drawLine(this.x, this.y + (scaleHeight * 50), this.x + scaleWidth, this.y - (int) tilt + (scaleHeight * 50));
-				// Bottom right
-				g.drawLine(this.x + 2 * scaleWidth, this.y + (scaleHeight * 50), this.x + scaleWidth, this.y - (int) tilt + (scaleHeight * 50));
-
-				g.setColor(Color.WHITE);
-				for (Particle p : particles)
-					{
-						int screenX = (int) ((scaleWidth * p.x) + (scaleWidth * p.z)) + this.x;
-						int screenY = (int) ((scaleHeight * p.y) - (tilt * p.x) + (tilt * p.z)) + this.y;
-						g.drawLine(screenX, screenY, screenX, screenY);
-					}
-
-				// Draw the wire frame that sits in front of the particles
-				g.setColor(Color.LIGHT_GRAY);
-				// Top left
-				g.drawLine(this.x, this.y, this.x + scaleWidth, this.y + (int) tilt);
-				// Top right
-				g.drawLine(this.x + (2 * scaleWidth), this.y, this.x + scaleWidth, this.y + (int) tilt);
-				// Front centre
-				g.drawLine(this.x + scaleWidth, this.y + (int) tilt, this.x + scaleWidth, this.y + (int) tilt + (50 * scaleHeight));
-				// Front left
-				g.drawLine(this.x, this.y, this.x, this.y + (50 * scaleHeight));
-				// Front right
-				g.drawLine(this.x + (2 * scaleWidth), this.y, this.x + (2 * scaleWidth), this.y + (50 * scaleHeight));
-				// Bottom left
-				g.drawLine(this.x, this.y + (scaleHeight * 50), this.x + scaleWidth, this.y + (int) tilt + (scaleHeight * 50));
-				// Bottom right
-				g.drawLine(this.x + (2 * scaleWidth), this.y + (scaleHeight * 50), this.x + scaleWidth, this.y + (int) tilt + (scaleHeight * 50));
+		/**
+		 * This class represents a small chunk of the simulation. The simulation is divided into a matrix of chunks, each containing information about the
+		 * specific locality of the simulation.
+		 * 
+		 * @author Sebastian Troy
+		 * 
+		 */
+		private class Chunk
+			{
 
 			}
 	}
