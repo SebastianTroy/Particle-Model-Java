@@ -2,6 +2,7 @@ package ParMod;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.event.KeyEvent;
 
 /**
  * 
@@ -17,13 +18,28 @@ public class GraphicalOutput
 		int currentViewMode = VIEW_PARTICLES;
 
 		// Note that the width and height of the graph do not represent the scale of the simulation to scale, they are merely a convenient size for observation.
-		private int graphX = 10, graphY = 35, graphWidth = 150, graphHeight = 600, graphTilt = 30;
+		private int graphX = 10, graphY = 35, graphWidth = 150, graphHeight = 600;
+		double graphTilt = 30;
+
+		final void tick(double secondsPassed)
+			{
+				if (Main.input.getKeyState(KeyEvent.VK_UP))
+					graphTilt -= 1 * secondsPassed;
+				if (Main.input.getKeyState(KeyEvent.VK_DOWN))
+					graphTilt += 1 * secondsPassed;
+				if (Main.input.getKeyState(KeyEvent.VK_LEFT))
+					;
+				if (Main.input.getKeyState(KeyEvent.VK_RIGHT))
+					;
+			}
 
 		/**
 		 * This method compartmentalises the code used to visualise the simulation for readability.
 		 */
 		final void drawWaterColumn(Graphics2D g)
 			{
+				int graphTilt = (int) this.graphTilt;
+				
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 				// Draw the parts of the wire frame for water column that are behind
 				g.setColor(Color.GRAY);
@@ -62,6 +78,20 @@ public class GraphicalOutput
 							}
 						case VIEW_CURRENTS:
 							{
+								g.setColor(Color.WHITE);
+								for (int x = 0; x < Main.sim.chunks.length; x++)
+									for (int y = 0; y < Main.sim.chunks[0].length; y++)
+										for (int z = 0; z < Main.sim.chunks[0][0].length; z++)
+											{
+												Chunk c = Main.sim.chunks[x][y][z];
+												int screenX = (int) ((graphWidth * x) + (graphWidth * z)) + graphX;
+												int screenY = (int) ((graphHeight / Main.sim.depth * y) - (graphTilt * x) + (graphTilt * z)) + graphY;
+												int velocityX = (int) ((graphWidth * (x + c.xVel)) + (graphWidth * (z + c.zVel))) + graphX;
+												int velocityY = (int) ((graphHeight / Main.sim.depth * (y + c.yVel)) - (graphTilt * (x + c.xVel)) + (graphTilt * (z + c.zVel))) + graphY;
+
+												g.drawLine(screenX, screenY, velocityX, velocityY);
+
+											}
 								// TODO implement code to view currents;
 								break; // Once that is done, ignore the rest of the options
 							}
