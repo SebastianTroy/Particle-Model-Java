@@ -11,5 +11,7 @@ public class Chunk
 	{	
 		// Current velocity
 		double xVel = 0, yVel = 0, zVel = 0;
+		
+		
 
 	}

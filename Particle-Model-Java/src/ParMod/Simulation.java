@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 import java.util.LinkedList;
 
 import tCode.RenderableObject;
+import tComponents.utils.events.TScrollEvent;
 import tools.RandTools;
 
 /**
@@ -58,12 +59,14 @@ public class Simulation extends RenderableObject
 					for (int y = 0; y < chunks[0].length; y++)
 						for (int z = 0; z < chunks[0][0].length; z++)
 							chunks[x][y][z] = new Chunk();
-
 			}
 
 		@Override
 		protected void initiate()
-			{}
+			{
+				// Initiate a new Graphical output that will display the simulation
+				Main.graphicalOutput = new GraphicalOutput();
+			}
 
 		@Override
 		public void tick(double secondsPassed) // TODO remove secondsPassed variable, the simulation should run in steps of 20 minutes a tick
@@ -78,9 +81,9 @@ public class Simulation extends RenderableObject
 							{
 
 								// Deal with random movements of particle
-								 p.x += (RandTools.getDouble(-0.001, 0.001) * pace);
-								 p.y += (RandTools.getDouble(-0.001, 0.001) * pace);
-								 p.z += (RandTools.getDouble(-0.001, 0.001) * pace);
+								p.x += (RandTools.getDouble(-0.001, 0.001) * pace);
+								p.y += (RandTools.getDouble(-0.001, 0.001) * pace);
+								p.z += (RandTools.getDouble(-0.001, 0.001) * pace);
 
 								// Make the particles sink
 								p.y += pace * particleSinkingRate;
@@ -125,19 +128,18 @@ public class Simulation extends RenderableObject
 				Main.graphicalOutput.drawWaterColumn(g);
 			}
 
+		// The following methods pass user input to the GraphicalOutput class so it knows what to show:
+
 		@Override
 		public final void keyPressed(KeyEvent event)
 			{
-				// If a key is pressed, find out which key...
-				switch (event.getKeyChar())
-					{
-					// If that key is a number, change to the appropriate viewing mode
-						case '1':
-							Main.graphicalOutput.currentViewMode = GraphicalOutput.VIEW_PARTICLES;
-							return; // Once that is done, ignore the rest of the options
-						case '2':
-							Main.graphicalOutput.currentViewMode = GraphicalOutput.VIEW_CURRENTS;
-							return; // Once that is done, ignore the rest of the options
-					}
+				Main.graphicalOutput.keyPressed(event);
+			}
+
+		@Override
+		public final void tScrollEvent(TScrollEvent event)
+			{
+				if (Main.graphicalOutput != null)
+					Main.graphicalOutput.tScrollEvent(event);
 			}
 	}

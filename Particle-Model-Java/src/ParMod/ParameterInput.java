@@ -28,7 +28,7 @@ public class ParameterInput extends RenderableObject
 
 		// Chunks (a chunk is a subsection of the simulation)
 		private TNumberField chunkNumberField;
-		private TLabel totalChunks = new TLabel(" (Total chunks: 5000) ");
+		private TLabel totalChunks = new TLabel(" (Total chunks: 50000) ");
 
 		@Override
 		protected void initiate()
@@ -48,7 +48,7 @@ public class ParameterInput extends RenderableObject
 				particleNumberField = new TNumberField(0, 0, 125, 25, 8); // limited to 8 digits long
 				particleNumberField.setText("10000");
 
-				// Create a text box that only accepts numbers up to 4 digits long
+				// Chunk parameters (a chunk is a subsection of the simulation)
 				chunkNumberField = new TNumberField(0, 0, 125, 25, 4); // limited to 4 digits long
 				chunkNumberField.setText("10");
 
@@ -66,12 +66,13 @@ public class ParameterInput extends RenderableObject
 
 				// Chunks (a chunk is a subsection of the simulation)
 				menu.add(new TLabel(" Number of Chunks per meter: "), false);
-				menu.add(totalChunks, false);
 				menu.add(chunkNumberField, false);
+				menu.add(totalChunks, false);
 
 				// Add a button that will begin the simulation when pressed.
 				menu.add(new TButton("Start")
 					{
+						// Tell the button what to do when it is pressed
 						@Override
 						public void pressed()
 							{
@@ -111,7 +112,8 @@ public class ParameterInput extends RenderableObject
 
 								// Create a new simulation using the parameters set by the user.
 								Main.sim = new Simulation(1/* width set to 1 meter */, (int) depth, (int) pace, (int) numParticles, 1.0 / chunks);
-								// Make the Simulation the current screen, instead of the ParameterInput.
+
+								// Make the Simulation the current screen, instead of this ParameterInput.
 								changeRenderableObject(Main.sim);
 							}
 					}, false);

@@ -15,7 +15,7 @@ public class Main extends TCode
 		 * These classes are here so that they can be easily accessed by any part of the simulation.
 		 */
 		static Simulation sim; // Simulation not initialised until parameters are chosen.
-		static GraphicalOutput graphicalOutput = new GraphicalOutput();
+		static GraphicalOutput graphicalOutput;
 
 		/**
 		 * This is the program entry.
