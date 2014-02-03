@@ -21,6 +21,7 @@ public class ParameterInput extends RenderableObject
 
 		// Simulation parameters
 		private TNumberField depthNumberField;
+		private TNumberField mixedDepthNumberField;
 		private TNumberField paceNumberField;
 
 		// Particle parameters
@@ -41,6 +42,8 @@ public class ParameterInput extends RenderableObject
 				// Simulation parameters
 				depthNumberField = new TNumberField(0, 0, 125, 25, 4); // limited to 4 digits long
 				depthNumberField.setText("50");
+				mixedDepthNumberField = new TNumberField(0, 0, 125, 25, 4); // limited to 4 digits long
+				mixedDepthNumberField.setText("25");
 				paceNumberField = new TNumberField(0, 0, 125, 25, 3); // limited to 3 digits long
 				paceNumberField.setText("20");
 
@@ -57,6 +60,8 @@ public class ParameterInput extends RenderableObject
 				// Simulation parameters
 				menu.add(new TLabel(" Depth of Simulation (meters): "), false);
 				menu.add(depthNumberField, false);
+				menu.add(new TLabel(" Depth of Mixed Layer (meters): "), false);
+				menu.add(mixedDepthNumberField, false);
 				menu.add(new TLabel(" Timestep of simulation (minutes): "), false);
 				menu.add(paceNumberField, false);
 
@@ -77,6 +82,7 @@ public class ParameterInput extends RenderableObject
 						public void pressed()
 							{
 								double depth = depthNumberField.getValue();
+								double mixedLayerDepth = mixedDepthNumberField.getValue();
 								double pace = paceNumberField.getValue();
 								double numParticles = particleNumberField.getValue();
 								double chunks = chunkNumberField.getValue();
@@ -86,6 +92,13 @@ public class ParameterInput extends RenderableObject
 								if (depth <= 0)
 									{
 										WindowTools.informationWindow("Warning - The depth must be: \n -Greater than 0m", "Cannot start Simulation");
+										return; // Don't start the simulation yet
+									}
+
+								// Depth of Mixed Layer
+								if (mixedLayerDepth > depth)
+									{
+										WindowTools.informationWindow("Warning - The depth of the mixed layer must be: \n -Less than or equal to the depth of the Simulation", "Cannot start Simulation");
 										return; // Don't start the simulation yet
 									}
 
@@ -111,12 +124,12 @@ public class ParameterInput extends RenderableObject
 									}
 
 								// Create a new simulation using the parameters set by the user.
-								Main.sim = new Simulation(1/* width set to 1 meter */, (int) depth, (int) pace, (int) numParticles, 1.0 / chunks);
+								Main.sim = new Simulation(1/* width set to 1 meter */, (int) depth, (int) mixedLayerDepth, (int) pace, (int) numParticles, 1.0 / chunks);
 
 								// Make the Simulation the current screen, instead of this ParameterInput.
 								changeRenderableObject(Main.sim);
 							}
-					}, false);
+					}, false); //end of adding the start button to the menu
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 			}

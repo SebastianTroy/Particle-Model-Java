@@ -18,10 +18,11 @@ public class Simulation extends RenderableObject
 		// The simulation takes place within a cuboid with the following parameters
 		int width; // The length of the simulation's short sides in meters
 		int depth; // The length of the simualtion's long sides in meters
+		int mixedLayerDepth; // The y value for the last chunk within the mixed surface layer
 		int pace; // The time in minutes that pass for each simulation 'tick'
 
 		LinkedList<Particle> particles; // Every particle being modelled is stored here.
-		double particleSinkingRate /* ? */; // The distance a particle will sink through the water column in a single minute
+		final double particleSinkingRate = 0.0005; // The distance a particle will sink through the water column in a single minute
 
 		Chunk[/* x */][/* y */][/* z */] chunks; // The simulation is subdivided into chunks which contain localised information.
 		double chunkSize; // Chunk size in meters
@@ -31,15 +32,15 @@ public class Simulation extends RenderableObject
 		 * @param numParticles
 		 *            - The number of particles to be modelled
 		 */
-		Simulation(int width, int depth, int pace, int numParticles, double chunkSize)
+		Simulation(int width, int depth, int mixedLayerDepth, int pace, int numParticles, double chunkSize)
 			{
 				super();
 
 				this.width = width;
 				this.depth = depth;
+				this.mixedLayerDepth = (int) (mixedLayerDepth / chunkSize);
 				this.pace = pace;
 				particles = new LinkedList<Particle>();
-				// this.particleSinkingRate =... <-- make this a constant or variable?
 				this.chunkSize = chunkSize;
 
 				// allocate memory for the particles array
@@ -49,6 +50,9 @@ public class Simulation extends RenderableObject
 						p.x = RandTools.getDouble(0, width);
 						p.y = RandTools.getDouble(0, depth);
 						p.z = RandTools.getDouble(0, width);
+						// p.x = RandTools.getDouble(0, 0);
+						// p.y = RandTools.getDouble(0, 0);
+						// p.z = RandTools.getDouble(0, 0);
 						particles.add(p);
 
 					}
@@ -69,32 +73,38 @@ public class Simulation extends RenderableObject
 			}
 
 		@Override
-		public void tick(double secondsPassed) // TODO remove secondsPassed variable, the simulation should run in steps of 20 minutes a tick
+		public void tick(double secondsPassed)
 			{
 				// TODO remove this for final simulation
-				double pace = this.pace * secondsPassed * 10; // Slows down the simulation so that it can be observed during development
+				double pace = this.pace * secondsPassed; // Slows down the simulation so that it can be observed during development
+
+				for (int x = 0; x < chunks.length; x++)
+					for (int y = 0; y < mixedLayerDepth; y++)
+						for (int z = 0; z < chunks[0][0].length; z++)
+							chunks[x][y][z].tick(this.pace);
 
 				for (Particle p : particles)
 					{
 						// If particle hasn't sunk yet
-						if (p.y < 50)
+						if (p.y < depth)// TODO remove sunk particles
 							{
+								// Apply local currents to particle's movements
+								Chunk c = chunks[(int) (p.x / chunkSize)][(int) (p.y / chunkSize)][(int) (p.z / chunkSize)];
+								p.x += (c.xVel * pace);
+								p.y += (c.yVel * pace);
+								p.z += (c.zVel * pace);
+								// System.out.println((int) (p.x / chunkSize) + ", " + (int) (p.y / chunkSize) + ", " + (int) (p.z / chunkSize));
 
 								// Deal with random movements of particle
-								p.x += (RandTools.getDouble(-0.001, 0.001) * pace);
-								p.y += (RandTools.getDouble(-0.001, 0.001) * pace);
-								p.z += (RandTools.getDouble(-0.001, 0.001) * pace);
+								p.x += (RandTools.getDouble(-0.002, 0.002) * pace);
+								p.y += (RandTools.getDouble(-0.002, 0.002) * pace);
+								p.z += (RandTools.getDouble(-0.002, 0.002) * pace);
 
 								// Make the particles sink
 								p.y += pace * particleSinkingRate;
 
-								// Apply local currents to particle's movements
-								p.x += chunks[(int) (p.x * chunkSize)][(int) (p.y * chunkSize)][(int) (p.z * chunkSize)].xVel;
-								p.y += chunks[(int) (p.x * chunkSize)][(int) (p.y * chunkSize)][(int) (p.z * chunkSize)].yVel;
-								p.z += chunks[(int) (p.x * chunkSize)][(int) (p.y * chunkSize)][(int) (p.z * chunkSize)].zVel;
-
 								// If a particle has left the boundaries of the water column,
-								if (p.x > width)
+								if (p.x >= width)
 									p.x -= width;
 								else if (p.x < 0)
 									p.x += width;
@@ -104,7 +114,7 @@ public class Simulation extends RenderableObject
 								else if (p.y < 0)
 									p.y = 0;
 
-								if (p.z > width)
+								if (p.z >= width)
 									p.z -= width;
 								else if (p.z < 0)
 									p.z += width;

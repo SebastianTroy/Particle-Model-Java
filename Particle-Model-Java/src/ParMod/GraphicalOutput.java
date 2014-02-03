@@ -100,7 +100,7 @@ public class GraphicalOutput
 			}
 
 		/**
-		 * This method compartmentalises the code used to visualise the simulation for readability.
+		 * This method compartmentalises the code used to visualise the simulation. It is compartmentalised to reduce code bloat.
 		 */
 		final void drawWaterColumn(Graphics2D g)
 			{
@@ -145,9 +145,9 @@ public class GraphicalOutput
 							}
 						case VIEW_CURRENTS:
 							{
-								double xSpacing = graphWidth / (Main.sim.chunks.length - 1);
-								double ySpacing = graphHeight / (Main.sim.chunks[0].length - 1);
-								double tiltSpacing = graphTilt / (Main.sim.chunks[0][0].length - 1);
+								double xSpacing = graphWidth / (Main.sim.chunks.length);
+								double ySpacing = graphHeight / (Main.sim.chunks[0].length);
+								double tiltSpacing = this.graphTilt / (Main.sim.chunks[0][0].length);
 
 								g.setColor(Color.WHITE);
 								for (int x = 0; x < Main.sim.chunks.length; x++)
@@ -155,13 +155,14 @@ public class GraphicalOutput
 										for (int z = 0; z < Main.sim.chunks[0][0].length; z++)
 											{
 												Chunk c = Main.sim.chunks[x][y][z];
-												int screenX = (int) ((xSpacing * x) + (xSpacing * z)) + graphX;
-												int screenY = (int) ((ySpacing * y) - (tiltSpacing * x) + (tiltSpacing * z)) + graphY;
-												int velocityX = (int) ((xSpacing * (x + c.xVel)) + (xSpacing * (z + c.zVel))) + graphX;
-												int velocityY = (int) ((ySpacing * (y + c.yVel)) - (tiltSpacing * (x + c.xVel)) + (tiltSpacing * (z + c.zVel))) + graphY;
+												int screenX = (int) ((xSpacing * x + (0.5 * xSpacing)) + (xSpacing * z + (0.5 * xSpacing))) + graphX;
+												int screenY = (int) ((ySpacing * y + (0.5 * ySpacing)) - (tiltSpacing * x + (0.5 * xSpacing)) + (tiltSpacing * z + (0.5 * xSpacing))) + graphY;
+												int velocityX = (int) ((xSpacing * (x + 10 * c.xVel) + (0.5 * xSpacing)) + (xSpacing * (z + 10 * c.zVel) + (0.5 * xSpacing))) + graphX;
+												int velocityY = (int) ((ySpacing * (y + 10 * c.yVel) + (0.5 * ySpacing)) - (tiltSpacing * (x + 10 * c.xVel) + (0.5 * xSpacing)) + (tiltSpacing
+														* (z + 10 * c.zVel) + (0.5 * xSpacing)))
+														+ graphY;
 
 												g.drawLine(screenX, screenY, velocityX, velocityY);
-
 											}
 								break; // Once that is drawn, ignore any further options
 							}
