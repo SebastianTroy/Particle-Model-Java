@@ -50,9 +50,9 @@ public class Simulation extends RenderableObject
 						p.x = RandTools.getDouble(0, width);
 						p.y = RandTools.getDouble(0, depth);
 						p.z = RandTools.getDouble(0, width);
-						// p.x = RandTools.getDouble(0, 0);
-						// p.y = RandTools.getDouble(0, 0);
-						// p.z = RandTools.getDouble(0, 0);
+//						 p.x = RandTools.getDouble(0, 0);
+//						 p.y = RandTools.getDouble(0, 0);
+//						 p.z = RandTools.getDouble(0, 0);
 						particles.add(p);
 
 					}
@@ -76,7 +76,7 @@ public class Simulation extends RenderableObject
 		public void tick(double secondsPassed)
 			{
 				// TODO remove this for final simulation
-				double pace = this.pace * secondsPassed; // Slows down the simulation so that it can be observed during development
+				double pace = this.pace * secondsPassed * 5; // Slows down the simulation so that it can be observed during development
 
 				for (int x = 0; x < chunks.length; x++)
 					for (int y = 0; y < mixedLayerDepth; y++)
