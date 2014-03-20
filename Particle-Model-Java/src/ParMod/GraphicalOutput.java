@@ -78,7 +78,7 @@ public class GraphicalOutput
 			{
 				double tiltMax = graphWidth * maxTiltProportion;
 
-				if (Main.input.getKeyState(KeyEvent.VK_UP) && graphTilt > -tiltMax)
+				if (Main.input.getKeyState(KeyEvent.VK_UP) && graphTilt > 0)
 					{
 						graphTilt -= tiltMax * secondsPassed;
 						setScale(scale);

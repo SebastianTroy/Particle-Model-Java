@@ -24,7 +24,7 @@ public class Simulation extends RenderableObject
 		LinkedList<Particle> particles; // Every particle being modelled is stored here.
 		final double particleSinkingRate = 0.0005; // The distance a particle will sink through the water column in a single minute
 
-		Chunk[/* x: width */][/* y: depth */][/* z: width */] chunks; // The simulation is subdivided into chunks which contain localised information.
+		Chunk[/* x */][/* y */][/* z */] chunks; // The simulation is subdivided into chunks which contain localised information.
 		double chunkSize; // Chunk size in meters
 
 		/**
@@ -76,7 +76,7 @@ public class Simulation extends RenderableObject
 		public void tick(double secondsPassed)
 			{
 				// TODO remove this for final simulation
-				double pace = this.pace * secondsPassed; // Slows down the simulation so that it can be observed during development
+				double pace = this.pace * secondsPassed * 5; // Slows down the simulation so that it can be observed during development
 
 				for (int x = 0; x < chunks.length; x++)
 					for (int y = 0; y < mixedLayerDepth; y++)
