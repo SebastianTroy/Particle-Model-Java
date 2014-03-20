@@ -45,6 +45,7 @@ public class Main extends TCode
 				frameHeight = 700;
 
 				DEBUG = true;
+				FORCE_SINGLE_THREAD = true;
 
 				begin(new ParameterInput());
 			}

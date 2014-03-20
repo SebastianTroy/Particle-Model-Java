@@ -7,7 +7,7 @@ import java.util.LinkedList;
 
 import tCode.RenderableObject;
 import tComponents.utils.events.TScrollEvent;
-import tools.RandTools;
+import tools.Rand;
 
 /**
  * 
@@ -24,7 +24,7 @@ public class Simulation extends RenderableObject
 		LinkedList<Particle> particles; // Every particle being modelled is stored here.
 		final double particleSinkingRate = 0.0005; // The distance a particle will sink through the water column in a single minute
 
-		Chunk[/* x */][/* y */][/* z */] chunks; // The simulation is subdivided into chunks which contain localised information.
+		Chunk[/* x: width */][/* y: depth */][/* z: width */] chunks; // The simulation is subdivided into chunks which contain localised information.
 		double chunkSize; // Chunk size in meters
 
 		/**
@@ -47,12 +47,12 @@ public class Simulation extends RenderableObject
 				for (int i = 0; i < numParticles; i++)
 					{
 						Particle p = new Particle();
-						p.x = RandTools.getDouble(0, width);
-						p.y = RandTools.getDouble(0, depth);
-						p.z = RandTools.getDouble(0, width);
-						// p.x = RandTools.getDouble(0, 0);
-						// p.y = RandTools.getDouble(0, 0);
-						// p.z = RandTools.getDouble(0, 0);
+						p.x = Rand.double_(0, width);
+						p.y = Rand.double_(0, depth);
+						p.z = Rand.double_(0, width);
+						// p.x = Rand.double_(0, 0);
+						// p.y = Rand.double_(0, 0);
+						// p.z = Rand.double_(0, 0);
 						particles.add(p);
 
 					}
@@ -96,9 +96,9 @@ public class Simulation extends RenderableObject
 								// System.out.println((int) (p.x / chunkSize) + ", " + (int) (p.y / chunkSize) + ", " + (int) (p.z / chunkSize));
 
 								// Deal with random movements of particle
-								p.x += (RandTools.getDouble(-0.002, 0.002) * pace);
-								p.y += (RandTools.getDouble(-0.002, 0.002) * pace);
-								p.z += (RandTools.getDouble(-0.002, 0.002) * pace);
+								p.x += (Rand.double_(-0.002, 0.002) * pace);
+								p.y += (Rand.double_(-0.002, 0.002) * pace);
+								p.z += (Rand.double_(-0.002, 0.002) * pace);
 
 								// Make the particles sink
 								p.y += pace * particleSinkingRate;

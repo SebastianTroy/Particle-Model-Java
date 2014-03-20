@@ -1,6 +1,6 @@
 package ParMod;
 
-import tools.RandTools;
+import tools.Rand;
 
 /**
  * This class represents a small chunk of the simulation. The simulation is divided into a matrix of chunks, each containing information about the specific
@@ -16,9 +16,6 @@ public class Chunk
 		private double newX = 0, newY = 0, newZ = 0;
 		private static final double maxVelocity = 0.005, rateOfChange = 0.001;
 
-		public Chunk()
-			{}
-
 		public final void tick(int pace)
 			{
 				xVel += (newX - xVel) * (rateOfChange * pace);
@@ -27,11 +24,20 @@ public class Chunk
 
 				// If the current has caught up with its new velocity, change its velocity again
 				if (Math.abs(Math.abs(xVel) - Math.abs(newX)) < 0.001)
-					newX = RandTools.getDouble(-maxVelocity, maxVelocity);
+					newX = Rand.double_(-maxVelocity, maxVelocity);
 				if (Math.abs(Math.abs(yVel) - Math.abs(newY)) < 0.001)
-					newY = RandTools.getDouble(-maxVelocity, maxVelocity);
+					newY = Rand.double_(-maxVelocity, maxVelocity);
 				if (Math.abs(Math.abs(zVel) - Math.abs(newZ)) < 0.001)
-					newZ = RandTools.getDouble(-maxVelocity, maxVelocity);
+					newZ = Rand.double_(-maxVelocity, maxVelocity);
+			}
+
+		public double getXVel()
+			{
+				double xvel = 0;
+				
+				
+
+				return xVel;
 			}
 
 	}

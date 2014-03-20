@@ -98,7 +98,8 @@ public class ParameterInput extends RenderableObject
 								// Depth of Mixed Layer
 								if (mixedLayerDepth > depth)
 									{
-										WindowTools.informationWindow("Warning - The depth of the mixed layer must be: \n -Less than or equal to the depth of the Simulation", "Cannot start Simulation");
+										WindowTools.informationWindow("Warning - The depth of the mixed layer must be: \n -Less than or equal to the depth of the Simulation",
+												"Cannot start Simulation");
 										return; // Don't start the simulation yet
 									}
 
@@ -129,8 +130,18 @@ public class ParameterInput extends RenderableObject
 								// Make the Simulation the current screen, instead of this ParameterInput.
 								changeRenderableObject(Main.sim);
 							}
-					}, false); //end of adding the start button to the menu
+					}); // end of adding the start button to the menu
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+				// TODO remove this temporary button
+				menu.add(new TButton("Test Vector Field (2D)")
+					{
+						@Override
+						public final void pressed()
+							{
+								changeRenderableObject(new VectorFieldTester());
+							}
+					});
 
 			}
 
