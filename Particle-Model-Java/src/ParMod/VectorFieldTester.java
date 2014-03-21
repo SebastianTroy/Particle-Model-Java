@@ -10,6 +10,7 @@ import tComponents.components.TLabel;
 import tComponents.components.TMenu;
 import tComponents.components.TSlider;
 import tComponents.utils.events.TScrollEvent;
+import tools.NumTools;
 
 public class VectorFieldTester extends RenderableObject
 	{
@@ -22,6 +23,7 @@ public class VectorFieldTester extends RenderableObject
 		// ~MENU~VARIABLES @formatter:off
 		private TMenu menu;
 		private final TSlider tickSpeedSlider = new TSlider(TSlider.HORIZONTAL, 0.01, 0.2);
+		private final TSlider iterationsSlider = new TSlider(TSlider.HORIZONTAL, 1, 20);
 		private final TSlider renderDensitySlider = new TSlider(TSlider.HORIZONTAL, 1, 10);
 		private final TButton resetButton = new TButton("Reset"){@Override public void pressed(){refresh();}};
 
@@ -45,12 +47,15 @@ public class VectorFieldTester extends RenderableObject
 
 				renderDensitySlider.setValue(5);
 				tickSpeedSlider.setValue(0.01);
+				iterationsSlider.setValue(6);
 
 				menu.add(new TLabel("<---------- Drag Mouse to create Currents"), false);
 				menu.add(new TLabel("Vector line Density"), false);
 				menu.add(renderDensitySlider);
 				menu.add(new TLabel("Time Between Calculations (s)"), false);
 				menu.add(tickSpeedSlider);
+				menu.add(new TLabel("Iterations of linear solving"), false);
+				menu.add(iterationsSlider);
 				menu.add(resetButton);
 
 				add(menu);
@@ -98,8 +103,8 @@ public class VectorFieldTester extends RenderableObject
 
 				int radius = NUM_CHUNKS / 10;
 
-				double xVel = Main.input.mouseXVel / 500.0;
-				double yVel = Main.input.mouseYVel / 500.0;
+				double xVel = Main.input.mouseXVel / 5000.0;
+				double yVel = Main.input.mouseYVel / 5000.0;
 
 				if (xVel < -MAX_CURRENT)
 					xVel = -MAX_CURRENT;
@@ -127,21 +132,18 @@ public class VectorFieldTester extends RenderableObject
 								if (y < 1 || y >= NUM_CHUNKS - 1)
 									break;
 
-								int dx = x - x1;
-								int dy = y - y1;
-								if ((double) dx * dx * radius * radius + (double) dy * dy * radius * radius <= (double) radius * radius * radius * radius)
-									{
-										int xIndex = x;
+								int xIndex = x;
 
-										if (xIndex < 0)
-											xIndex += NUM_CHUNKS;
-										if (xIndex >= NUM_CHUNKS)
-											xIndex -= NUM_CHUNKS;
+								if (xIndex < 0)
+									xIndex += NUM_CHUNKS;
+								if (xIndex >= NUM_CHUNKS)
+									xIndex -= NUM_CHUNKS;
 
-										int k = getK(xIndex, y);
-										this.xVel[k] += xVel;
-										this.yVel[k] += yVel;
-									}
+								int index = getK(xIndex, y);
+								// Stronger currents added closer to the mouse
+								double distanceModifier = radius - Math.abs(NumTools.distance(x1, y1, x, y));
+								this.xVel[index] += xVel * distanceModifier;
+								this.yVel[index] += yVel * distanceModifier;
 							}
 					}
 			}
@@ -177,28 +179,53 @@ public class VectorFieldTester extends RenderableObject
 				return x + y * xSize;
 			}
 
-		// 4-10 iterations is good for real-time, and not noticably inaccurate. For real accuracy, upwards of 20 is good.
-		private void linearSolve(double[] dest, double[] src, int b, double a, double c)
-			{
-				double wMax = 1.9;
-				double wMin = 1.5;
-				for (int i = 0; i < 6; i++)
-					{
-						double w = Math.max((wMin - wMax) * i / 60.0 + wMax, wMin);
-						for (int y = 1; y < ySize - 1; y++)
-							{
-								int yIndex = y * xSize;
-								for (int x = 0; x < xSize; x++)
-									{
-										int k = x + yIndex;
-										dest[k] = dest[k] + w * ((a * (dest[k - 1] + dest[k + 1] + dest[k - xSize] + dest[k + xSize]) + src[k]) / c - dest[k]);
-										// dest[getK(x, y)] = (a * (dest[getK(x-1,y)] + dest[getK(x+1,y)] + dest[getK(x,y-1)] + dest[getK(x,y+1)]) +
-										// src[getK(x,y)]) / c;
-									}
-							}
-						setBounds(b, dest);
-					}
-			}
+		private void setBounds(int b, double[] d)
+		{
+			if (b == 1)// if xVelocities
+				{
+					/*
+					 * For everything down the sides, apply friction (to perpetual flow occurring)
+					 */
+					for (int y = 0; y < ySize; y++)
+						{
+							d[getK(0, y)] *= 0.95;
+							d[getK(xSize - 1, y)] *= 0.95;
+						}
+					/*
+					 * For everything along the top && not at a side, x motion is the same as that in any neighbors
+					 */
+					for (int x = 1; x < xSize - 1; x++)
+						{
+							d[getK(x, 0)] = d[getK(x, 1)];
+							d[getK(x, ySize - 1)] = d[getK(x, ySize - 2)];
+						}
+				}
+			else if (b == 2)// if yVelocities
+				{
+					for (int x = 0; x < xSize; x++)
+						{
+							d[getK(x, 0)] = 0;
+							d[getK(x, ySize - 1)] = 0;
+						}
+				}
+			else
+				// b == 0
+				{
+					for (int x = 1; x < xSize - 1; x++)
+						{
+							d[getK(x, 0)] = d[getK(x, 1)];
+							d[getK(x, ySize - 1)] = d[getK(x, ySize - 2)];
+						}
+					/*
+					 * For corners, velocity is interpolation of neighbors
+					 */
+					 d[getK(0, 0)] = 0.5 * (d[getK(0, 1)] + d[getK(1, 0)]);
+					 d[getK(0, ySize - 1)] = 0.5 * (d[getK(1, ySize - 1)] + d[getK(0, ySize - 2)]);
+					 d[getK(xSize - 1, 0)] = 0.5 * (d[getK(xSize - 1, 1)] + d[getK(xSize - 2, 0)]);
+					 d[getK(xSize - 1, ySize - 1)] = 0.5 * (d[getK(xSize - 1, ySize - 2)] + d[getK(xSize - 2, ySize - 1)]);
+				}
+		
+		}
 
 		private void advect(double[] dest, double[] src, double[] xVelocity, double[] yVelocity, int b, double dt)
 			{
@@ -284,51 +311,24 @@ public class VectorFieldTester extends RenderableObject
 				setBounds(2, yV);
 			}
 
-		private void setBounds(int b, double[] d)
+		// 4-10 iterations is good for real-time, and not noticeably inaccurate. For real accuracy, upwards of 20 is good.
+		private void linearSolve(double[] dest, double[] src, int b, double a, double c)
 			{
-				if (b == 1)// if xVelocities
+				double wMax = 1.9;
+				double wMin = 1.5;
+				for (int i = 0; i < iterationsSlider.getValue(); i++)
 					{
-						/*
-						 * For everything down the sides, apply friction (to perpetual flow occurring)
-						 */
-						for (int y = 0; y < ySize; y++)
+						double w = Math.max((wMin - wMax) * i / 60.0 + wMax, wMin);
+						for (int y = 1; y < ySize - 1; y++)
 							{
-								d[getK(0, y)] *= 0.95;
-								d[getK(xSize - 1, y)] *= 0.95;
+								int yIndex = y * xSize;
+								for (int x = 0; x < xSize; x++)
+									{
+										int k = x + yIndex;
+										dest[k] +=  w * ((a * (dest[k - 1] + dest[k + 1] + dest[k - xSize] + dest[k + xSize]) + src[k]) / c - dest[k]);
+									}
 							}
-						/*
-						 * For everything along the top && not at a side, x motion is the same as that in any neighbors
-						 */
-						for (int x = 1; x < xSize - 1; x++)
-							{
-								d[getK(x, 0)] = d[getK(x, 1)];
-								d[getK(x, ySize - 1)] = d[getK(x, ySize - 2)];
-							}
+						setBounds(b, dest);
 					}
-				else if (b == 2)// if yVelocities
-					{
-						for (int x = 0; x < xSize; x++)
-							{
-								d[getK(x, 0)] = 0;
-								d[getK(x, ySize - 1)] = 0;
-							}
-					}
-				else
-					// b == 0
-					{
-						for (int x = 1; x < xSize - 1; x++)
-							{
-								d[getK(x, 0)] = d[getK(x, 1)];
-								d[getK(x, ySize - 1)] = d[getK(x, ySize - 2)];
-							}
-						/*
-						 * For corners, velocity is interpolation of neighbors
-						 */
-						d[getK(0, 0)] = 0.5 * (d[getK(0, 1)] + d[getK(1, 0)]);
-						d[getK(0, ySize - 1)] = 0.5 * (d[getK(1, ySize - 1)] + d[getK(0, ySize - 2)]);
-						d[getK(xSize - 1, 0)] = 0.5 * (d[getK(xSize - 1, 1)] + d[getK(xSize - 2, 0)]);
-						d[getK(xSize - 1, ySize - 1)] = 0.5 * (d[getK(xSize - 1, ySize - 2)] + d[getK(xSize - 2, ySize - 1)]);
-					}
-
 			}
 	}
