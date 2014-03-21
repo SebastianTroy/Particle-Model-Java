@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 
+import ParMod.VectorField.Axis;
 import tComponents.components.TScrollBar;
 import tComponents.utils.events.TScrollEvent;
 
@@ -154,13 +155,16 @@ public class GraphicalOutput
 									for (int y = 0; y < Main.sim.chunks[0].length; y++)
 										for (int z = 0; z < Main.sim.chunks[0][0].length; z++)
 											{
-												Chunk c = Main.sim.chunks[x][y][z];
 												int screenX = (int) ((xSpacing * x + (0.5 * xSpacing)) + (xSpacing * z + (0.5 * xSpacing))) + graphX;
 												int screenY = (int) ((ySpacing * y + (0.5 * ySpacing)) - (tiltSpacing * x + (0.5 * xSpacing)) + (tiltSpacing * z + (0.5 * xSpacing))) + graphY;
-												int velocityX = (int) ((xSpacing * (x + 10 * c.xVel) + (0.5 * xSpacing)) + (xSpacing * (z + 10 * c.zVel) + (0.5 * xSpacing))) + graphX;
-												int velocityY = (int) ((ySpacing * (y + 10 * c.yVel) + (0.5 * ySpacing)) - (tiltSpacing * (x + 10 * c.xVel) + (0.5 * xSpacing)) + (tiltSpacing
-														* (z + 10 * c.zVel) + (0.5 * xSpacing)))
-														+ graphY;
+
+												double xVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.x);
+												double yVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.x);
+												double zVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.x);
+
+												int velocityX = (int) ((xSpacing * (x + 10 * xVel) + (0.5 * xSpacing)) + (xSpacing * (z + 10 * zVel) + (0.5 * xSpacing))) + graphX;
+												int velocityY = (int) ((ySpacing * (y + 10 * yVel) + (0.5 * ySpacing)) - (tiltSpacing * (x + 10 * xVel) + (0.5 * xSpacing)) + (tiltSpacing
+														* (z + 10 * zVel) + (0.5 * xSpacing))) + graphY;
 
 												g.drawLine(screenX, screenY, velocityX, velocityY);
 											}

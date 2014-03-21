@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.util.LinkedList;
 
+import ParMod.VectorField.Axis;
 import tCode.RenderableObject;
 import tComponents.utils.events.TScrollEvent;
 import tools.Rand;
@@ -41,7 +42,7 @@ public class Simulation extends RenderableObject
 				this.pace = pace;
 				particles = new LinkedList<Particle>();
 				this.chunkSize = chunkSize;
-				
+
 				vecField = new VectorField(width, depth);
 
 				// allocate memory for the particles array
@@ -51,9 +52,9 @@ public class Simulation extends RenderableObject
 						p.x = Rand.double_(0, width);
 						p.y = Rand.double_(0, depth);
 						p.z = Rand.double_(0, width);
-						// p.x = Rand.double_(0, 0);
-						// p.y = Rand.double_(0, 0);
-						// p.z = Rand.double_(0, 0);
+						// p.x = width / 2;
+						// p.y = 0;
+						// p.z = width / 2;
 						particles.add(p);
 
 					}
@@ -79,26 +80,25 @@ public class Simulation extends RenderableObject
 				// TODO remove this for final simulation
 				double pace = this.pace * secondsPassed * 5; // Slows down the simulation so that it can be observed during development
 
-				for (int x = 0; x < chunks.length; x++)
-					for (int y = 0; y < mixedLayerDepth; y++)
-						for (int z = 0; z < chunks[0][0].length; z++)
-							chunks[x][y][z].tick(this.pace);
+				// TODO Add logic to chunks to allow tracking of nutrients/light levels e.t.c...
+				// for (int x = 0; x < chunks.length; x++)
+				// for (int y = 0; y < mixedLayerDepth; y++)
+				// for (int z = 0; z < chunks[0][0].length; z++)
+				// chunks[x][y][z].tick(this.pace);
 
 				for (Particle p : particles)
-					{
 						// If particle hasn't sunk yet
 						if (p.y < depth)// TODO remove sunk particles
 							{
 								// Apply local currents to particle's movements
-								Chunk c = chunks[(int) (p.x / chunkSize)][(int) (p.y / chunkSize)][(int) (p.z / chunkSize)];
-								p.x += (c.xVel * pace);
-								p.y += (c.yVel * pace);
-								p.z += (c.zVel * pace);
+								p.x += (vecField.getVelocityAt(p.x, p.y, p.z, Axis.x));
+								p.y += (vecField.getVelocityAt(p.x, p.y, p.z, Axis.y));
+								p.z += (vecField.getVelocityAt(p.x, p.y, p.z, Axis.z));
 
 								// Deal with random movements of particle
-								p.x += (Rand.double_(-0.002, 0.002) * pace);
-								p.y += (Rand.double_(-0.002, 0.002) * pace);
-								p.z += (Rand.double_(-0.002, 0.002) * pace);
+								p.x += (Rand.double_(-0.001, 0.001) * pace);
+								p.y += (Rand.double_(-0.001, 0.001) * pace);
+								p.z += (Rand.double_(-0.001, 0.001) * pace);
 
 								// Make the particles sink
 								p.y += pace * particleSinkingRate;
@@ -118,7 +118,6 @@ public class Simulation extends RenderableObject
 									p.z -= width;
 								else if (p.z < 0)
 									p.z += width;
-							}
 					}
 				// Calls a method in the graphical output class that checks for user interaction with the simulation
 				Main.graphicalOutput.tick(secondsPassed);

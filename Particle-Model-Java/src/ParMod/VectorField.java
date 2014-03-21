@@ -3,7 +3,10 @@ package ParMod;
 import tools.WindowTools;
 
 /**
- * This class holds all of the information and methods required to compute a vector field for the model. It is based on the Navier-Stokes equations and was
+ * This class holds all of the information and methods required to compute a vector field for the model. It is based on the Navier-Stokes equations.
+ * <p>
+ * The velocity data held here corresponds directly to the {@link Chunk}s in the mixed layer, i.e. the velocity of the chunk at 0, 1, 32 == the velocity stored
+ * at velocity[getIndex(0, 1, 32)]
  * 
  * @author Sebastian Troy
  */
@@ -54,18 +57,53 @@ public class VectorField
 				xSize = zSize = width;
 				ySize = depth;
 				layerSize = xSize * ySize;
-				
+
 				// Allocate memory
 				xVel = new double[width * width * depth];
 				yVel = new double[width * width * depth];
 				zVel = new double[width * width * depth];
-				
+
 				xVelP = xVel.clone();
 				yVelP = yVel.clone();
 				zVelP = zVel.clone();
 			}
 
 		// TODO method to add disturbances
+
+		/**
+		 * The velocity at the centre of a specific {@link Chunk}
+		 * 
+		 * @param x
+		 *            - The x coordinate of the {@link Chunk}
+		 * @param y
+		 *            - The y coordinate of the {@link Chunk}
+		 * @param z
+		 *            - The z coordinate of the {@link Chunk}
+		 * @param axis
+		 *            - The {@link Axis} for which the required velocity will be calculated
+		 * 
+		 * @return - The velocity of the {@link Chunk} at the specified coordinates
+		 */
+		final double getVelocityAt(int x, int y, int z, Axis axis)
+			{
+				// If the requested velocity is below of the mixed layer
+				if (y >= ySize)
+					return 0;
+
+				switch (axis)
+					{
+						case x:
+							return xVel[getIndex(x, y, z)];
+						case y:
+							return yVel[getIndex(x, y, z)];
+						case z:
+							return zVel[getIndex(x, y, z)];
+						case undefined:
+						default:
+							WindowTools.debugWindow("Cannot return velocity for undetermined axis");
+							return 0;
+					}
+			}
 
 		/**
 		 * Method uses linear interpolation to calculate the exact velocity anywhere within the model despite stored data being grainy.
