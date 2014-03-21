@@ -1,7 +1,7 @@
 package ParMod;
 
 /**
- * This class 
+ * This class holds all of the information and methods required to compute a vector field for the model. It is based on the Navier-Stokes equations and was
  * 
  * @author Sebastian Troy
  */
@@ -10,7 +10,7 @@ public class VectorField
 		/**
 		 * Keeps track of the axis currently being worked on
 		 */
-		private enum Axes
+		private enum Axis
 			{
 				x, y, z, undefined
 			}
@@ -25,9 +25,13 @@ public class VectorField
 		private double[] xVelP, yVelP, zVelP;
 
 		/**
-		 * Where xSize is width, zSize is breadth and ySize is depth from surface to thermocline.
+		 * Where: <br>
+		 * xSize is width,<br>
+		 * ySize is depth from surface to thermocline,<br>
+		 * zSize is breadth &<br>
+		 * layerSize is the number of elements in a single layer of the model (xSize * zSize).
 		 */
-		private int xSize, ySize, zSize;
+		private int xSize, ySize, zSize, layerSize;
 
 		/**
 		 * An arbitrary value used to control how quickly pressure differences are resolved.
@@ -41,6 +45,9 @@ public class VectorField
 		 */
 		public final void stepSimulation()
 			{
+				/*
+				 * First we need to move our old velocity data into temporary storage so we can use it to compute new velocity data without modifying it.
+				 */
 				double[] temp;
 
 				temp = xVelP;
@@ -55,10 +62,13 @@ public class VectorField
 				zVelP = zVel;
 				zVel = temp;
 
-				advect(xVel, xVelP, xVelP, yVelP, zVelP, Axes.x);
-				advect(yVel, yVelP, xVelP, yVelP, zVelP, Axes.y);
-				advect(zVel, zVelP, xVelP, yVelP, zVelP, Axes.z);
-				project(xVel, yVel, zVel, /* reused to prevent unnecessary memory allocation -> */xVelP, yVelP);
+				/*
+				 * Secondly we apply the following methods to calculate the new velocities for the next time step.
+				 */
+				advect(xVel, xVelP, xVelP, yVelP, zVelP, Axis.x);
+				advect(yVel, yVelP, xVelP, yVelP, zVelP, Axis.y);
+				advect(zVel, zVelP, xVelP, yVelP, zVelP, Axis.z);
+				project(xVel, yVel, zVel, /* arbitrarily reused to prevent unnecessary new memory allocation -> */xVelP, yVelP);
 			}
 
 		/**
@@ -74,7 +84,7 @@ public class VectorField
 		 * 
 		 * @return - The index of velocity data for the above {@link Chunk} coordinates.
 		 */
-		private final int getIndex(int x, int y, int z)// refacter to getIndex
+		private final int getIndex(int x, int y, int z)
 			{
 				return x + (y * xSize) + (z * xSize * ySize);
 			}
@@ -85,7 +95,7 @@ public class VectorField
 		 * @param axis
 		 * @param velocityData
 		 */
-		private void correctEdgeCases(Axes axis, double[] velocityData)
+		private void correctEdgeCases(Axis axis, double[] velocityData)
 			{
 				switch (axis)
 					{
@@ -175,12 +185,11 @@ public class VectorField
 		 * @param yVelocity
 		 * @param zVelocity
 		 * @param axis
+		 *            - the axis currently being worked on.
 		 */
-		private void advect(double[] dest, double[] src, double[] xVelocity, double[] yVelocity, double[] zVelocity, Axes axis)
+		private void advect(double[] dest, double[] src, double[] xVelocity, double[] yVelocity, double[] zVelocity, Axis axis)
 			{
-				// for all chunks which are not surface or thermocline chunks
-
-				// to the depth of the thermocline
+				// from just below the surface to the depth just above the thermocline
 				for (int y = 1; y < ySize - 1; y++)
 					// for width of model
 					for (int x = 0; x < xSize; x++)
@@ -197,13 +206,13 @@ public class VectorField
 								// if x-source is off either end of the axis, wrap to other end
 								if (xSrc < 0)
 									xSrc += xSize;
-								if (xSrc >= xSize)
+								else if (xSrc >= xSize)
 									xSrc -= xSize;
 
 								// if z-source is off either end of the axis, wrap to other end
 								if (zSrc < 0)
 									zSrc += zSize;
-								if (zSrc >= zSize)
+								else if (zSrc >= zSize)
 									zSrc -= zSize;
 
 								int xi0 = (int) xSrc;
@@ -218,13 +227,10 @@ public class VectorField
 
 								// if y-source is above surface or below thermocline, restrict to surface/thermocline
 								if (ySrc < 0.5)
-									{
-										ySrc = 0.5;
-									}
-								if (ySrc > ySize - 1.5)
-									{
-										ySrc = ySize - 1.5;
-									}
+									ySrc = 0.5;
+								else if (ySrc > ySize - 1.5)
+									ySrc = ySize - 1.5;
+
 								int yi0 = (int) ySrc;
 								int yi1 = yi0 + 1;
 
@@ -236,7 +242,8 @@ public class VectorField
 								double zProp1 = zSrc - yi0;
 								double zProp0 = 1.0 - zProp1;
 
-								dest[k] = xProp0 * (yProp0 * src[getK(xi0, yi0)] + yProp1 * src[getK(xi0, yi1)]) + xProp1 * (yProp0 * src[getK(xi1, yi0)] + yProp1 * src[getK(xi1, yi1)]);
+								dest[k] = xProp0 * (yProp0 * src[getK(xi0, yi0)] + yProp1 * src[getK(xi0, yi1)]) 
+										+ xProp1 * (yProp0 * src[getK(xi1, yi0)] + yProp1 * src[getK(xi1, yi1)]);
 								// TODO work out how to add z axis to this ^
 							}
 
@@ -258,7 +265,7 @@ public class VectorField
 		private void project(double[] xV, double[] yV, double[] zV, double[] p, double[] div)
 			{
 				double h = 0.1;
-				// to the depth of the thermocline
+				// from just below the surface to the depth just above the thermocline
 				for (int y = 1; y < ySize - 1; y++)
 					// for width of model
 					for (int x = 0; x < xSize; x++)
@@ -267,14 +274,17 @@ public class VectorField
 							{
 								int k = getIndex(x, y, z);
 								// Negative divergence ~ TODO should 0.5 change now 2 more chunks are involved?
-								div[k] = -0.5 * h * (xV[k + 1] - xV[k - 1] + yV[k + xSize] - yV[k - xSize] + zV[k + zSize * zSize] - zV[k - zSize * zSize]);
+								div[k] = -0.5 * h * (xV[k + 1] - xV[k - 1] + yV[k + xSize] - yV[k - xSize] + zV[k + layerSize] - zV[k - layerSize]);
 								// Pressure field
 								p[k] = 0;
 							}
-				correctEdgeCases(Axes.undefined, div);
-				correctEdgeCases(Axes.undefined, p);
 
-				linearSolve(p, div, Axes.undefined, 4);
+				// Fill in data for surface and thermocline layers that we previously missed
+				correctEdgeCases(Axis.undefined, div);
+				correctEdgeCases(Axis.undefined, p);
+
+				// Diverge flow at leading edge of currents
+				linearSolve(p, div, Axis.undefined);
 
 				// to the depth of the thermocline
 				for (int y = 1; y < ySize - 1; y++)
@@ -286,12 +296,13 @@ public class VectorField
 								int k = getIndex(x, y, z);
 								xV[k] -= 0.5 * (p[k + 1] - p[k - 1]) / h;
 								yV[k] -= 0.5 * (p[k + xSize] - p[k - xSize]) / h;
-								zV[k] -= 0.5 * (p[k + zSize * zSize] - p[k - zSize * zSize]) / h;
+								zV[k] -= 0.5 * (p[k + layerSize] - p[k - layerSize]) / h;
 							}
 
-				correctEdgeCases(Axes.x, xV);
-				correctEdgeCases(Axes.y, yV);
-				correctEdgeCases(Axes.z, zV);
+				// Do one final check for all velocities to finalise the values
+				correctEdgeCases(Axis.x, xV);
+				correctEdgeCases(Axis.y, yV);
+				correctEdgeCases(Axis.z, zV);
 			}
 
 		/**
@@ -303,17 +314,14 @@ public class VectorField
 		 * @param src
 		 *            - The divergence data calculated during the {@link VectorField#project(double[], double[], double[], double[], double[])} step.
 		 * @param axis
-		 *            - The current {@link Axes} data to which this method is being applied.
-		 * @param c
-		 *            - TODO previously used by other more complex aspects that have been stripped out, only ever 4.
+		 *            - The current {@link Axis} data to which this method is being applied.
 		 */
-		private void linearSolve(double[] dest, double[] src, Axes axis, double c)
+		private void linearSolve(double[] dest, double[] src, Axis axis)
 			{
-				double wMax = 1.9;
-				double wMin = 1.5;
+				double w = 2;
 				for (int i = 0; i < 6; i++)
 					{
-						double w = Math.max((wMin - wMax) * i / 60.0 + wMax, wMin);
+						w -= 0.1;
 						// to the depth of the thermocline
 						for (int y = 1; y < ySize - 1; y++)
 							// for width of model
@@ -322,11 +330,9 @@ public class VectorField
 								for (int z = 0; z < zSize; z++)
 									{
 										int k = getIndex(x, y, z);
-										 // TODO upgrade this to 3 dimensions v
-										dest[k] = dest[k] + w * ((dest[k - 1] + dest[k + 1] + dest[k - xSize] + dest[k + xSize] + src[k]) / c - dest[k]);
+										dest[k] += w * ((dest[k - 1] + dest[k + 1] + dest[k - xSize] + dest[k + xSize] + dest[k - layerSize] + dest[k + layerSize] + src[k]) / 4 - dest[k]);
 									}
 						correctEdgeCases(axis, dest);
 					}
 			}
-
 	}
