@@ -38,13 +38,15 @@ public class Main extends TCode
 		public Main(boolean framed, boolean resizable)
 			{
 				super(framed, resizable);
+				
 				programName = "Particle Model";
 				versionNumber = "alpha";
-				frame.simplifyTitle(true);
+				frame.simplifyTitle(false);
+				
 				frameWidth = 900;
 				frameHeight = 700;
 
-				DEBUG = true;
+				DEBUG = false;
 				FORCE_SINGLE_THREAD = true;
 
 				begin(new ParameterInput());

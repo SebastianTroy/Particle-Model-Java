@@ -1,5 +1,7 @@
 package ParMod;
 
+import tools.WindowTools;
+
 /**
  * This class holds all of the information and methods required to compute a vector field for the model. It is based on the Navier-Stokes equations and was
  * 
@@ -10,7 +12,7 @@ public class VectorField
 		/**
 		 * Keeps track of the axis currently being worked on
 		 */
-		private enum Axis
+		enum Axis
 			{
 				x, y, z, undefined
 			}
@@ -39,11 +41,120 @@ public class VectorField
 		private static final double TIMESTEP = 0.1;
 
 		// TODO constructor
+		/**
+		 * 
+		 * @param width
+		 *            - The length of the short sides of the model in {@link Chunk}s
+		 * @param depth
+		 *            - The depth of the mixed layer in {@link Chunk}s
+		 */
+		VectorField(int width, int depth)
+			{
+				// establish the bounds of the VectorField
+				xSize = zSize = width;
+				ySize = depth;
+				layerSize = xSize * ySize;
+				
+				// Allocate memory
+				xVel = new double[width * width * depth];
+				yVel = new double[width * width * depth];
+				zVel = new double[width * width * depth];
+				
+				xVelP = xVel.clone();
+				yVelP = yVel.clone();
+				zVelP = zVel.clone();
+			}
+
+		// TODO method to add disturbances
+
+		/**
+		 * Method uses linear interpolation to calculate the exact velocity anywhere within the model despite stored data being grainy.
+		 * 
+		 * @param x
+		 *            - The x coordinate at which the velocity will be calculated
+		 * @param y
+		 *            - The y coordinate at which the velocity will be calculated
+		 * @param z
+		 *            - The z coordinate at which the velocity will be calculated
+		 * @param axis
+		 *            - The {@link Axis} for which the required velocity will be calculated
+		 * 
+		 * @return - The velocity on the specified axis at the specified coordinates
+		 */
+		final double getVelocityAt(double x, double y, double z, Axis axis)
+			{
+				double[] velocity = null;
+
+				switch (axis)
+					{
+						case x:
+							velocity = xVel;
+							break;
+						case y:
+							velocity = yVel;
+							break;
+						case z:
+							velocity = zVel;
+							break;
+						case undefined:
+						default:
+							WindowTools.debugWindow("Cannot get vecor without spoecifying an axis");
+					}
+
+				// if x-source is off either end of the axis, wrap to other end
+				if (x < 0)
+					x += xSize;
+				else if (x >= xSize)
+					x -= xSize;
+
+				// if z-source is off either end of the axis, wrap to other end
+				if (z < 0)
+					z += zSize;
+				else if (z >= zSize)
+					z -= zSize;
+
+				int xi0 = (int) x;
+				int xi1 = xi0 + 1;
+				if (xi1 == xSize)
+					xi1 -= xSize;
+
+				int zi0 = (int) z;
+				int zi1 = zi0 + 1;
+				if (zi1 == zSize)
+					zi1 -= zSize;
+
+				// if y-source is above surface or below thermocline, restrict to surface/thermocline
+				if (y < 0.5)
+					y = 0.5;
+				else if (y > ySize - 1.5)
+					y = ySize - 1.5;
+
+				int yi0 = (int) y;
+				int yi1 = yi0 + 1;
+
+				// Linear interpolation factors. Ex: 0.6 and 0.4
+				double xProp1 = x - xi0;
+				double xProp0 = 1.0 - xProp1;
+				double yProp1 = y - yi0;
+				double yProp0 = 1.0 - yProp1;
+				double zProp1 = z - yi0;
+				double zProp0 = 1.0 - zProp1;
+
+				/*
+				 * Here we find the velocity at a point in the middle of 8 chunks. We basically interpolate the velocity between all of the yAxis neighbours,
+				 * then we interpolate those values along the x axis, then finally, to combine them into a point we combine those velocities along the z axis.
+				 */
+				return (zProp0 * (xProp0 * (yProp0 * velocity[getIndex(xi0, yi0, zi0)] + yProp1 * velocity[getIndex(xi0, yi1, zi0)]) + xProp1
+						* (yProp0 * velocity[getIndex(xi1, yi0, zi0)] + yProp1 * velocity[getIndex(xi1, yi1, zi0)])))
+						+ (zProp1 * (xProp0 * (yProp0 * velocity[getIndex(xi0, yi0, zi1)] + yProp1 * velocity[getIndex(xi0, yi1, zi1)]) + xProp1
+								* (yProp0 * velocity[getIndex(xi1, yi0, zi1)] + yProp1 * velocity[getIndex(xi1, yi1, zi1)])));
+
+			}
 
 		/**
 		 * This updates all velocity values to represent those that would be expected in the next time slice of the model.
 		 */
-		public final void stepSimulation()
+		final void stepSimulation()
 			{
 				/*
 				 * First we need to move our old velocity data into temporary storage so we can use it to compute new velocity data without modifying it.
@@ -86,14 +197,16 @@ public class VectorField
 		 */
 		private final int getIndex(int x, int y, int z)
 			{
-				return x + (y * xSize) + (z * xSize * ySize);
+				return x + (y * xSize) + (z * layerSize);
 			}
 
 		/**
-		 * TODO
+		 * Iterate through the velocities of {@link Chunk}s at the edges or surfaces of the simulation and apply special rules to prevent unexpected behaviour.
 		 * 
 		 * @param axis
+		 *            - The axis currently in need of correcting
 		 * @param velocityData
+		 *            - The velocity data for the axis
 		 */
 		private void correctEdgeCases(Axis axis, double[] velocityData)
 			{
@@ -177,13 +290,19 @@ public class VectorField
 			}
 
 		/**
-		 * TODO
+		 * Calculate the new velocity for a particular axis by finding the point at which the old velocity originated and deriving the velocity from the centre
+		 * of the {@link Chunk}s by linear interpolation between them.
 		 * 
 		 * @param dest
+		 *            - Storage for velocities to be calculated for the current axes
 		 * @param src
+		 *            - Old velocities for current axis
 		 * @param xVelocity
+		 *            - Old xVelocities from the last time step
 		 * @param yVelocity
+		 *            - Old yVelocities from the last time step
 		 * @param zVelocity
+		 *            - Old zVelocities from the last time step
 		 * @param axis
 		 *            - the axis currently being worked on.
 		 */
@@ -242,9 +361,15 @@ public class VectorField
 								double zProp1 = zSrc - yi0;
 								double zProp0 = 1.0 - zProp1;
 
-								dest[k] = xProp0 * (yProp0 * src[getK(xi0, yi0)] + yProp1 * src[getK(xi0, yi1)]) 
-										+ xProp1 * (yProp0 * src[getK(xi1, yi0)] + yProp1 * src[getK(xi1, yi1)]);
-								// TODO work out how to add z axis to this ^
+								/*
+								 * Here we find the velocity at a point in the middle of 8 chunks. We basically interpolate the velocity between all of the
+								 * yAxis neighbours, then we interpolate those values along the x axis, then finally, to combine them into a point we combine
+								 * those velocities along the z axis.
+								 */
+								dest[k] = (zProp0 * (xProp0 * (yProp0 * src[getIndex(xi0, yi0, zi0)] + yProp1 * src[getIndex(xi0, yi1, zi0)]) + xProp1
+										* (yProp0 * src[getIndex(xi1, yi0, zi0)] + yProp1 * src[getIndex(xi1, yi1, zi0)])))
+										+ (zProp1 * (xProp0 * (yProp0 * src[getIndex(xi0, yi0, zi1)] + yProp1 * src[getIndex(xi0, yi1, zi1)]) + xProp1
+												* (yProp0 * src[getIndex(xi1, yi0, zi1)] + yProp1 * src[getIndex(xi1, yi1, zi1)])));
 							}
 
 				correctEdgeCases(axis, dest);
@@ -273,7 +398,7 @@ public class VectorField
 						for (int z = 0; z < zSize; z++)
 							{
 								int k = getIndex(x, y, z);
-								// Negative divergence ~ TODO should 0.5 change now 2 more chunks are involved?
+								// Negative divergence
 								div[k] = -0.5 * h * (xV[k + 1] - xV[k - 1] + yV[k + xSize] - yV[k - xSize] + zV[k + layerSize] - zV[k - layerSize]);
 								// Pressure field
 								p[k] = 0;
@@ -332,7 +457,7 @@ public class VectorField
 										int k = getIndex(x, y, z);
 										dest[k] += w * ((dest[k - 1] + dest[k + 1] + dest[k - xSize] + dest[k + xSize] + dest[k - layerSize] + dest[k + layerSize] + src[k]) / 4 - dest[k]);
 									}
-						correctEdgeCases(axis, dest);
 					}
+				correctEdgeCases(axis, dest);
 			}
 	}

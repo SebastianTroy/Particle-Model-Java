@@ -15,7 +15,7 @@ import tools.NumTools;
 public class VectorFieldTester extends RenderableObject
 	{
 		private static final int NUM_CHUNKS = 200, MAX_CURRENT = 20;
-		private int chunkWidth, chunkHeight;
+		private int chunkWidth, chunkHeight, halfChunkWidth, halfChunkHeight;
 
 		private int renderGap = 5;
 		private double timer = 0, timePerTick = 0.01;
@@ -42,6 +42,7 @@ public class VectorFieldTester extends RenderableObject
 		public final void initiate()
 			{
 				chunkWidth = chunkHeight = Main.canvasHeight / NUM_CHUNKS;
+				halfChunkWidth = halfChunkHeight = chunkWidth / 2;
 
 				menu = new TMenu(NUM_CHUNKS * chunkWidth, 0, Main.canvasWidth - (NUM_CHUNKS * chunkWidth), Main.canvasHeight, TMenu.VERTICAL);
 
@@ -92,13 +93,14 @@ public class VectorFieldTester extends RenderableObject
 				g.setColor(Color.WHITE);
 				for (int x = 0; x < NUM_CHUNKS; x += renderGap)
 					for (int y = 0; y < NUM_CHUNKS; y += renderGap)
-						g.drawLine(x * chunkWidth, y * chunkHeight, (int) ((x + xVel[getK(x, y)]) * chunkWidth), (int) ((y + yVel[getK(x, y)]) * chunkHeight));
+						g.drawLine((x * chunkWidth) + halfChunkWidth, (y * chunkHeight) + halfChunkHeight, (int) ((x + xVel[getK(x, y)]) * chunkWidth) + halfChunkWidth,
+								(int) ((y + yVel[getK(x, y)]) * chunkHeight) + halfChunkHeight);
 			}
 
 		@Override
 		public final void mouseDragged(MouseEvent e)
 			{
-				if (e.getX() < 0 || e.getY() < 0 || e.getX() > Main.canvasHeight || e.getY() > Main.canvasHeight)
+				if (e.getX() < 0 || e.getY() < 0 || e.getX() > (NUM_CHUNKS - 1) * chunkWidth || e.getY() > (NUM_CHUNKS - 1) * chunkHeight)
 					return;
 
 				int radius = NUM_CHUNKS / 10;
@@ -329,7 +331,7 @@ public class VectorFieldTester extends RenderableObject
 						w -= 0.01;
 						if (w < 1.5)
 							w = 1.5;
-						setBounds(b, dest);
 					}
+				setBounds(b, dest);
 			}
 	}

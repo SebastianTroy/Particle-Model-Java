@@ -24,6 +24,7 @@ public class Simulation extends RenderableObject
 		LinkedList<Particle> particles; // Every particle being modelled is stored here.
 		final double particleSinkingRate = 0.0005; // The distance a particle will sink through the water column in a single minute
 
+		VectorField vecField;
 		Chunk[/* x */][/* y */][/* z */] chunks; // The simulation is subdivided into chunks which contain localised information.
 		double chunkSize; // Chunk size in meters
 
@@ -34,14 +35,14 @@ public class Simulation extends RenderableObject
 		 */
 		Simulation(int width, int depth, int mixedLayerDepth, int pace, int numParticles, double chunkSize)
 			{
-				super();
-
 				this.width = width;
 				this.depth = depth;
 				this.mixedLayerDepth = (int) (mixedLayerDepth / chunkSize);
 				this.pace = pace;
 				particles = new LinkedList<Particle>();
 				this.chunkSize = chunkSize;
+				
+				vecField = new VectorField(width, depth);
 
 				// allocate memory for the particles array
 				for (int i = 0; i < numParticles; i++)
@@ -93,7 +94,6 @@ public class Simulation extends RenderableObject
 								p.x += (c.xVel * pace);
 								p.y += (c.yVel * pace);
 								p.z += (c.zVel * pace);
-								// System.out.println((int) (p.x / chunkSize) + ", " + (int) (p.y / chunkSize) + ", " + (int) (p.z / chunkSize));
 
 								// Deal with random movements of particle
 								p.x += (Rand.double_(-0.002, 0.002) * pace);
