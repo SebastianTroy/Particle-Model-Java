@@ -11,6 +11,7 @@ import tComponents.components.TMenu;
 import tComponents.components.TSlider;
 import tComponents.utils.events.TScrollEvent;
 import tools.NumTools;
+import tools.Rand;
 
 public class VectorFieldTester extends RenderableObject
 	{
@@ -127,27 +128,25 @@ public class VectorFieldTester extends RenderableObject
 				int x2 = x1 + radius;
 				int y2 = y1 + radius;
 
-				for (int x = x0; x <= x2; x++)
-					{
-						for (int y = y0; y <= y2; y++)
-							{
-								if (y < 1 || y >= NUM_CHUNKS - 1)
-									break;
+				for (int y = y0; y <= y2; y++)
+					for (int x = x0; x <= x2; x++)
+						{
+							if (y < 1 || y >= NUM_CHUNKS - 1)
+								break;
 
-								int xIndex = x;
+							int xIndex = x;
 
-								if (xIndex < 0)
-									xIndex += NUM_CHUNKS;
-								if (xIndex >= NUM_CHUNKS)
-									xIndex -= NUM_CHUNKS;
+							if (xIndex < 0)
+								xIndex += NUM_CHUNKS;
+							if (xIndex >= NUM_CHUNKS)
+								xIndex -= NUM_CHUNKS;
 
-								int index = getK(xIndex, y);
-								// Stronger currents added closer to the mouse
-								double distanceModifier = radius - Math.abs(NumTools.distance(x1, y1, x, y));
-								this.xVel[index] += xVel * distanceModifier;
-								this.yVel[index] += yVel * distanceModifier;
-							}
-					}
+							int index = getK(xIndex, y);
+							// Stronger currents added closer to the mouse
+							double distanceModifier = radius - Math.abs(NumTools.distance(x1, y1, x, y));
+							this.xVel[index] += xVel * distanceModifier;
+							this.yVel[index] += yVel * distanceModifier;
+						}
 			}
 
 		@Override
@@ -219,12 +218,10 @@ public class VectorFieldTester extends RenderableObject
 								d[getK(x, ySize - 1)] = d[getK(x, ySize - 2)];
 							}
 						/*
-						 * For corners, velocity is interpolation of neighbors
+						 * // d[getK(0, 0)] = 0.5 * (d[getK(0, 1)] + d[getK(1, 0)]); // d[getK(0, ySize - 1)] = 0.5 * (d[getK(1, ySize - 1)] + d[getK(0, ySize -
+						 * 2)]); // d[getK(xSize - 1, 0)] = 0.5 * (d[getK(xSize - 1, 1)] + d[getK(xSize - 2, 0)]); // d[getK(xSize - 1, ySize - 1)] = 0.5 *
+						 * (d[getK(xSize - 1, ySize - 2)] + d[getK(xSize - 2, ySize - 1)]); For corners, velocity is interpolation of neighbors
 						 */
-						d[getK(0, 0)] = 0.5 * (d[getK(0, 1)] + d[getK(1, 0)]);
-						d[getK(0, ySize - 1)] = 0.5 * (d[getK(1, ySize - 1)] + d[getK(0, ySize - 2)]);
-						d[getK(xSize - 1, 0)] = 0.5 * (d[getK(xSize - 1, 1)] + d[getK(xSize - 2, 0)]);
-						d[getK(xSize - 1, ySize - 1)] = 0.5 * (d[getK(xSize - 1, ySize - 2)] + d[getK(xSize - 2, ySize - 1)]);
 					}
 
 			}

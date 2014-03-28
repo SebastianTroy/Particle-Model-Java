@@ -159,8 +159,8 @@ public class GraphicalOutput
 												int screenY = (int) ((ySpacing * y + (0.5 * ySpacing)) - (tiltSpacing * x + (0.5 * xSpacing)) + (tiltSpacing * z + (0.5 * xSpacing))) + graphY;
 
 												double xVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.x);
-												double yVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.x);
-												double zVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.x);
+												double yVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.y);
+												double zVel = Main.sim.vecField.getVelocityAt(x, y, z, Axis.z);
 
 												int velocityX = (int) ((xSpacing * (x + 10 * xVel) + (0.5 * xSpacing)) + (xSpacing * (z + 10 * zVel) + (0.5 * xSpacing))) + graphX;
 												int velocityY = (int) ((ySpacing * (y + 10 * yVel) + (0.5 * ySpacing)) - (tiltSpacing * (x + 10 * xVel) + (0.5 * xSpacing)) + (tiltSpacing

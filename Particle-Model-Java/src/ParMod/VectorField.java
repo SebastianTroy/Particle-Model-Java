@@ -1,5 +1,6 @@
 package ParMod;
 
+import tools.Rand;
 import tools.WindowTools;
 
 /**
@@ -13,7 +14,7 @@ import tools.WindowTools;
 public class VectorField
 	{
 		/**
-		 * Keeps track of the axis currently being worked on
+		 * Used to keep track of, and pass around, the axis currently being worked on between functions
 		 */
 		enum Axis
 			{
@@ -43,8 +44,8 @@ public class VectorField
 		 */
 		private static final double TIMESTEP = 0.1;
 
-		// TODO constructor
 		/**
+		 * Simply allocates the appropriate amount of memory for the Vector field.
 		 * 
 		 * @param width
 		 *            - The length of the short sides of the model in {@link Chunk}s
@@ -56,7 +57,7 @@ public class VectorField
 				// establish the bounds of the VectorField
 				xSize = zSize = width;
 				ySize = depth;
-				layerSize = xSize * ySize;
+				layerSize = xSize * zSize;
 
 				// Allocate memory
 				xVel = new double[width * width * depth];
@@ -66,9 +67,54 @@ public class VectorField
 				xVelP = xVel.clone();
 				yVelP = yVel.clone();
 				zVelP = zVel.clone();
+
+				double maxvelocity = 0.01;
+				for (int x = 0; x < xVel.length; x++)
+					xVel[x] = Rand.double_(-maxvelocity, maxvelocity);
+				for (int y = 0; y < yVel.length; y++)
+					yVel[y] = Rand.double_(-maxvelocity, maxvelocity);
+				for (int z = 0; z < zVel.length; z++)
+					zVel[z] = Rand.double_(-maxvelocity, maxvelocity);
+
+				correctEdgeCases(Axis.x, xVel);
+				correctEdgeCases(Axis.y, yVel);
+				correctEdgeCases(Axis.z, zVel);
+
+				for (int i = 0; i < 10; i++)
+					stepSimulation();
 			}
 
-		// TODO method to add disturbances
+		final void addDisturbance(int radius, int chunkX, int chunkY, int chunkZ, double xVel, double yVel, double zVel)
+			{
+				// Limited to below the surface layer and above the thermocline layer
+				// For each depth in the range
+				for (int y = Math.max(1, chunkY - radius); y < Math.min(ySize - 2, chunkY + radius); y++)
+					// For every chunk at that depth within the range
+					for (int x = chunkX - radius; x < chunkX + radius; x++)
+						for (int z = chunkZ - radius; z < chunkZ + radius; z++)
+							{
+								int xIndex = x;
+								// y doesn't need to be checked as it doesn't wrap
+								int zIndex = z;
+
+								// wrap the coordinates if they go off the x or z axes
+								if (xIndex < 0)
+									xIndex += xSize;
+								if (xIndex >= xSize)
+									xIndex -= xSize;
+
+								if (zIndex < 0)
+									zIndex += zSize;
+								if (zIndex >= zSize)
+									zIndex -= zSize;
+
+								int index = getIndex(xIndex, y, zIndex);
+								this.xVel[index] += xVel;
+								this.yVel[index] += yVel;
+								this.zVel[index] += zVel;
+								// System.out.println("(" + this.xVel[index] + ", " + this.yVel[index] + ", " + this.zVel[index] + ")");
+							}
+			}
 
 		/**
 		 * The velocity at the centre of a specific {@link Chunk}
@@ -121,6 +167,9 @@ public class VectorField
 		 */
 		final double getVelocityAt(double x, double y, double z, Axis axis)
 			{
+				if (y >= ySize)
+					return 0;
+
 				double[] velocity = null;
 
 				switch (axis)
@@ -138,18 +187,6 @@ public class VectorField
 						default:
 							WindowTools.debugWindow("Cannot get vecor without spoecifying an axis");
 					}
-
-				// if x-source is off either end of the axis, wrap to other end
-				if (x < 0)
-					x += xSize;
-				else if (x >= xSize)
-					x -= xSize;
-
-				// if z-source is off either end of the axis, wrap to other end
-				if (z < 0)
-					z += zSize;
-				else if (z >= zSize)
-					z -= zSize;
 
 				int xi0 = (int) x;
 				int xi1 = xi0 + 1;
@@ -175,7 +212,7 @@ public class VectorField
 				double xProp0 = 1.0 - xProp1;
 				double yProp1 = y - yi0;
 				double yProp0 = 1.0 - yProp1;
-				double zProp1 = z - yi0;
+				double zProp1 = z - zi0;
 				double zProp0 = 1.0 - zProp1;
 
 				/*
@@ -186,7 +223,6 @@ public class VectorField
 						* (yProp0 * velocity[getIndex(xi1, yi0, zi0)] + yProp1 * velocity[getIndex(xi1, yi1, zi0)])))
 						+ (zProp1 * (xProp0 * (yProp0 * velocity[getIndex(xi0, yi0, zi1)] + yProp1 * velocity[getIndex(xi0, yi1, zi1)]) + xProp1
 								* (yProp0 * velocity[getIndex(xi1, yi0, zi1)] + yProp1 * velocity[getIndex(xi1, yi1, zi1)])));
-
 			}
 
 		/**
@@ -235,7 +271,7 @@ public class VectorField
 		 */
 		private final int getIndex(int x, int y, int z)
 			{
-				return x + (y * xSize) + (z * layerSize);
+				return x + (y * layerSize) + (z * xSize);
 			}
 
 		/**
@@ -372,11 +408,13 @@ public class VectorField
 								else if (zSrc >= zSize)
 									zSrc -= zSize;
 
+								// The chunk where our x velocity originated and the chunk after it so we can interpolate
 								int xi0 = (int) xSrc;
 								int xi1 = xi0 + 1;
 								if (xi1 == xSize)
 									xi1 -= xSize;
 
+								// The chunk where our z velocity originated and the chunk after it so we can interpolate
 								int zi0 = (int) zSrc;
 								int zi1 = zi0 + 1;
 								if (zi1 == zSize)
@@ -396,7 +434,7 @@ public class VectorField
 								double xProp0 = 1.0 - xProp1;
 								double yProp1 = ySrc - yi0;
 								double yProp0 = 1.0 - yProp1;
-								double zProp1 = zSrc - yi0;
+								double zProp1 = zSrc - zi0;
 								double zProp0 = 1.0 - zProp1;
 
 								/*
@@ -493,7 +531,7 @@ public class VectorField
 								for (int z = 0; z < zSize; z++)
 									{
 										int k = getIndex(x, y, z);
-										dest[k] += w * ((dest[k - 1] + dest[k + 1] + dest[k - xSize] + dest[k + xSize] + dest[k - layerSize] + dest[k + layerSize] + src[k]) / 4 - dest[k]);
+										dest[k] += w * ((dest[k - 1] + dest[k + 1] + dest[k - xSize] + dest[k + xSize] + dest[k - layerSize] + dest[k + layerSize] + src[k]) / 6 - dest[k]);
 									}
 					}
 				correctEdgeCases(axis, dest);

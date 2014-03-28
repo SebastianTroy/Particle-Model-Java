@@ -133,16 +133,18 @@ public class ParameterInput extends RenderableObject
 					}); // end of adding the start button to the menu
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-				// TODO remove this temporary button
-				menu.add(new TButton("Test Vector Field (2D)")
+				if (Main.DEBUG)
 					{
-						@Override
-						public final void pressed()
+						menu.add(new TLabel("Debugging Tools"), false);
+						menu.add(new TButton("Test Vector Field (2D)")
 							{
-								changeRenderableObject(new VectorFieldTester());
-							}
-					});
-
+								@Override
+								public final void pressed()
+									{
+										changeRenderableObject(new VectorFieldTester());
+									}
+							});
+					}
 			}
 
 		// The following methods are not used but the supertype for this class requires them.

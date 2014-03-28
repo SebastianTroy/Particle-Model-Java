@@ -3,6 +3,7 @@ package ParMod;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 import ParMod.VectorField.Axis;
@@ -23,6 +24,7 @@ public class Simulation extends RenderableObject
 		int pace; // The time in minutes that pass for each simulation 'tick'
 
 		LinkedList<Particle> particles; // Every particle being modelled is stored here.
+		Iterator<Particle> iter;
 		final double particleSinkingRate = 0.0005; // The distance a particle will sink through the water column in a single minute
 
 		VectorField vecField;
@@ -43,7 +45,8 @@ public class Simulation extends RenderableObject
 				particles = new LinkedList<Particle>();
 				this.chunkSize = chunkSize;
 
-				vecField = new VectorField(width, depth);
+				// Create a new vector field
+				vecField = new VectorField((int) (width / chunkSize), (int) (mixedLayerDepth / chunkSize));
 
 				// allocate memory for the particles array
 				for (int i = 0; i < numParticles; i++)
@@ -86,14 +89,18 @@ public class Simulation extends RenderableObject
 				// for (int z = 0; z < chunks[0][0].length; z++)
 				// chunks[x][y][z].tick(this.pace);
 
-				for (Particle p : particles)
+				iter = particles.iterator();
+				Particle p;
+				while (iter.hasNext())
+					{
+						p = iter.next();
 						// If particle hasn't sunk yet
 						if (p.y < depth)// TODO remove sunk particles
 							{
 								// Apply local currents to particle's movements
-								p.x += (vecField.getVelocityAt(p.x, p.y, p.z, Axis.x));
-								p.y += (vecField.getVelocityAt(p.x, p.y, p.z, Axis.y));
-								p.z += (vecField.getVelocityAt(p.x, p.y, p.z, Axis.z));
+								p.x += (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.x));
+								p.y += (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.y));
+								p.z += (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.z));
 
 								// Deal with random movements of particle
 								p.x += (Rand.double_(-0.001, 0.001) * pace);
@@ -110,15 +117,27 @@ public class Simulation extends RenderableObject
 									p.x += width;
 
 								if (p.y > depth) // If below the sea floor
-									p.y = depth; // Return to the sea floor //TODO remove particle from simulation
-								else if (p.y < 0)
-									p.y = 0;
+									iter.remove(); // Remove from simulation
+								else if (p.y < 0) // If above surface
+									p.y = 0; // Return to surface
 
 								if (p.z >= width)
 									p.z -= width;
 								else if (p.z < 0)
 									p.z += width;
+							}
 					}
+
+//				if (Rand.percent() > 99)
+//					{
+//						// Disturb water in mixed layer by adding a small current at a random vector at a random location in the mixed layer
+//						double maxDisturbance = 0.01;
+//						vecField.addDisturbance(6, Rand.int_(0, chunks.length), Rand.int_(0, chunks[0].length), Rand.int_(0, chunks[0][0].length), Rand.double_(-maxDisturbance, maxDisturbance),
+//								Rand.double_(-maxDisturbance, maxDisturbance), Rand.double_(-maxDisturbance, maxDisturbance));
+//					}
+				
+				vecField.stepSimulation();
+
 				// Calls a method in the graphical output class that checks for user interaction with the simulation
 				Main.graphicalOutput.tick(secondsPassed);
 			}
