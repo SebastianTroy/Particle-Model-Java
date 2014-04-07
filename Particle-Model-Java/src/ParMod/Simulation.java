@@ -25,7 +25,7 @@ public class Simulation extends RenderableObject
 
 		LinkedList<Particle> particles; // Every particle being modelled is stored here.
 		Iterator<Particle> iter;
-		final double particleSinkingRate = 0.0005; // The distance a particle will sink through the water column in a single minute
+		final double particleSinkingRate = 0.0001; // The distance a particle will sink through the water column in a single minute
 
 		VectorField vecField;
 		Chunk[/* x */][/* y */][/* z */] chunks; // The simulation is subdivided into chunks which contain localised information.
@@ -98,9 +98,9 @@ public class Simulation extends RenderableObject
 						if (p.y < depth)// TODO remove sunk particles
 							{
 								// Apply local currents to particle's movements
-								p.x += (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.x));
-								p.y += (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.y));
-								p.z += (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.z));
+								p.x += 0.05 * (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.x));
+								p.y += 0.05 * (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.y));
+								p.z += 0.05 * (vecField.getVelocityAt(p.x / chunkSize, p.y / chunkSize, p.z / chunkSize, Axis.z));
 
 								// Deal with random movements of particle
 								p.x += (Rand.double_(-0.001, 0.001) * pace);
@@ -128,15 +128,8 @@ public class Simulation extends RenderableObject
 							}
 					}
 
-//				if (Rand.percent() > 99)
-//					{
-//						// Disturb water in mixed layer by adding a small current at a random vector at a random location in the mixed layer
-//						double maxDisturbance = 0.01;
-//						vecField.addDisturbance(6, Rand.int_(0, chunks.length), Rand.int_(0, chunks[0].length), Rand.int_(0, chunks[0][0].length), Rand.double_(-maxDisturbance, maxDisturbance),
-//								Rand.double_(-maxDisturbance, maxDisturbance), Rand.double_(-maxDisturbance, maxDisturbance));
-//					}
-				
-				vecField.stepSimulation();
+				if (Rand.percent() > 90)
+					vecField.stepSimulation();
 
 				// Calls a method in the graphical output class that checks for user interaction with the simulation
 				Main.graphicalOutput.tick(secondsPassed);

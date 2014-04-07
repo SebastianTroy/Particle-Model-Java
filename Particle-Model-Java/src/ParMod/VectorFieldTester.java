@@ -11,10 +11,17 @@ import tComponents.components.TMenu;
 import tComponents.components.TSlider;
 import tComponents.utils.events.TScrollEvent;
 import tools.NumTools;
-import tools.Rand;
 
 public class VectorFieldTester extends RenderableObject
 	{
+		/**
+		 * Used to keep track of, and pass around, the axis currently being worked on between functions
+		 */
+		enum Axis
+			{
+				x, y, undefined
+			}
+
 		private static final int NUM_CHUNKS = 200, MAX_CURRENT = 20;
 		private int chunkWidth, chunkHeight, halfChunkWidth, halfChunkHeight;
 
@@ -170,8 +177,8 @@ public class VectorFieldTester extends RenderableObject
 				yVelP = yVel;
 				yVel = temp;
 
-				advect(xVel, xVelP, xVelP, yVelP, 1, timestep);
-				advect(yVel, yVelP, xVelP, yVelP, 2, timestep);
+				advect(xVel, xVelP, xVelP, yVelP, Axis.x, timestep);
+				advect(yVel, yVelP, xVelP, yVelP, Axis.y, timestep);
 				project(xVel, yVel, xVelP, yVelP);
 			}
 
@@ -180,9 +187,9 @@ public class VectorFieldTester extends RenderableObject
 				return x + y * xSize;
 			}
 
-		private void setBounds(int b, double[] d)
+		private void setBounds(Axis axis, double[] d)
 			{
-				if (b == 1)// if xVelocities
+				if (axis == Axis.x)// if xVelocities
 					{
 						/*
 						 * For everything down the sides, apply friction (to perpetual flow occurring)
@@ -193,16 +200,17 @@ public class VectorFieldTester extends RenderableObject
 								d[getK(xSize - 1, y)] *= 0.95;
 							}
 						/*
-						 * For everything along the top && not at a side, x motion is the same as that in any neighbors
+						 * For everything along the top & bottom that is not at a side, x motion is the same as that of nearest neighbour on y axis
 						 */
-						for (int x = 1; x < xSize - 1; x++)
+						for (int x = 1; x < xSize - 2; x++)
 							{
 								d[getK(x, 0)] = d[getK(x, 1)];
 								d[getK(x, ySize - 1)] = d[getK(x, ySize - 2)];
 							}
 					}
-				else if (b == 2)// if yVelocities
+				else if (axis == Axis.y)// if yVelocities
 					{
+						// No y velocities for top or bottom layer
 						for (int x = 0; x < xSize; x++)
 							{
 								d[getK(x, 0)] = 0;
@@ -212,24 +220,25 @@ public class VectorFieldTester extends RenderableObject
 				else
 					// b == 0
 					{
-						for (int x = 1; x < xSize - 1; x++)
+						for (int x = 1; x < xSize - 2; x++)
 							{
 								d[getK(x, 0)] = d[getK(x, 1)];
 								d[getK(x, ySize - 1)] = d[getK(x, ySize - 2)];
 							}
-						/*
-						 * // d[getK(0, 0)] = 0.5 * (d[getK(0, 1)] + d[getK(1, 0)]); // d[getK(0, ySize - 1)] = 0.5 * (d[getK(1, ySize - 1)] + d[getK(0, ySize -
-						 * 2)]); // d[getK(xSize - 1, 0)] = 0.5 * (d[getK(xSize - 1, 1)] + d[getK(xSize - 2, 0)]); // d[getK(xSize - 1, ySize - 1)] = 0.5 *
-						 * (d[getK(xSize - 1, ySize - 2)] + d[getK(xSize - 2, ySize - 1)]); For corners, velocity is interpolation of neighbors
-						 */
+
+						d[getK(0, 0)] = 0.5 * (d[getK(0, 1)] + d[getK(1, 0)]);
+						d[getK(0, ySize - 1)] = 0.5 * (d[getK(1, ySize - 1)] + d[getK(0, ySize - 2)]);
+						d[getK(xSize - 1, 0)] = 0.5 * (d[getK(xSize - 1, 1)] + d[getK(xSize - 2, 0)]);
+						d[getK(xSize - 1, ySize - 1)] = 0.5 * (d[getK(xSize - 1, ySize - 2)] + d[getK(xSize - 2, ySize - 1)]);
+						// For corners, velocity is interpolation of neighbors
 					}
 
 			}
 
-		private void advect(double[] dest, double[] src, double[] xVelocity, double[] yVelocity, int b, double dt)
+		private void advect(double[] dest, double[] src, double[] xVelocity, double[] yVelocity, Axis axis, double dt)
 			{
 				// for non top/bottom edge chunks
-				for (int y = 1; y < ySize - 1; y++)
+				for (int y = 1; y < ySize -1; y++)
 					{
 						int yIndex = y * xSize;
 						// for all chunks within above range
@@ -273,12 +282,12 @@ public class VectorFieldTester extends RenderableObject
 							}
 					}
 
-				setBounds(b, dest);
+				setBounds(axis, dest);
 			}
 
 		private void project(double[] xV, double[] yV, double[] p, double[] div)
 			{
-				double h = 0.1; // /(xSize-2);
+				double h = 0.00000000000000001;
 				for (int y = 1; y < ySize - 1; y++)
 					{
 						int yIndex = y * xSize;
@@ -291,10 +300,10 @@ public class VectorFieldTester extends RenderableObject
 								p[k] = 0;
 							}
 					}
-				setBounds(0, div);
-				setBounds(0, p);
+				setBounds(Axis.undefined, div);
+				setBounds(Axis.undefined, p);
 
-				linearSolve(p, div, 0);
+				linearSolve(p, div, Axis.undefined);
 
 				for (int y = 1; y < ySize - 1; y++)
 					{
@@ -306,12 +315,12 @@ public class VectorFieldTester extends RenderableObject
 								yV[k] -= 0.5 * (p[k + xSize] - p[k - xSize]) / h;
 							}
 					}
-				setBounds(1, xV);
-				setBounds(2, yV);
+				setBounds(Axis.x, xV);
+				setBounds(Axis.y, yV);
 			}
 
 		// 4-10 iterations is good for real-time, and not noticeably inaccurate. For real accuracy, upwards of 20 is good.
-		private void linearSolve(double[] dest, double[] src, int b)
+		private void linearSolve(double[] dest, double[] src, Axis axis)
 			{
 				double w = 1.9;
 				for (int i = 0; i < iterationsSlider.getValue(); i++)
@@ -329,6 +338,6 @@ public class VectorFieldTester extends RenderableObject
 						if (w < 1.5)
 							w = 1.5;
 					}
-				setBounds(b, dest);
+				setBounds(axis, dest);
 			}
 	}

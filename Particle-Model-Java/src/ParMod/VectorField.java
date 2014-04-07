@@ -68,19 +68,16 @@ public class VectorField
 				yVelP = yVel.clone();
 				zVelP = zVel.clone();
 
-				double maxvelocity = 0.01;
-				for (int x = 0; x < xVel.length; x++)
-					xVel[x] = Rand.double_(-maxvelocity, maxvelocity);
-				for (int y = 0; y < yVel.length; y++)
-					yVel[y] = Rand.double_(-maxvelocity, maxvelocity);
-				for (int z = 0; z < zVel.length; z++)
-					zVel[z] = Rand.double_(-maxvelocity, maxvelocity);
+				double vel = 0.1;
 
-				correctEdgeCases(Axis.x, xVel);
-				correctEdgeCases(Axis.y, yVel);
-				correctEdgeCases(Axis.z, zVel);
+				for (int i = 0; i < xVel.length; i++)
+					xVel[i] = Rand.double_(-vel, vel);
+				for (int i = 0; i < yVel.length; i++)
+					yVel[i] = Rand.double_(-vel, vel);
+				for (int i = 0; i < zVel.length; i++)
+					zVel[i] = Rand.double_(-vel, vel);
 
-				for (int i = 0; i < 10; i++)
+				for (int i = 0; i < 100; i++)
 					stepSimulation();
 			}
 
@@ -248,7 +245,17 @@ public class VectorField
 				zVel = temp;
 
 				/*
-				 * Secondly we apply the following methods to calculate the new velocities for the next time step.
+				 * Secondly we ensure the mixed layer is turning over
+				 */
+				// int i = getIndex(xSize / 2, 1, zSize / 2);
+				// for (int y = 1; y < ySize - 1; y++)
+				// {
+				// yVelP[i] = -0.01;
+				// i += layerSize;
+				// }
+
+				/*
+				 * Thirdly we apply the following methods to calculate the new velocities for the next time step.
 				 */
 				advect(xVel, xVelP, xVelP, yVelP, zVelP, Axis.x);
 				advect(yVel, yVelP, xVelP, yVelP, zVelP, Axis.y);
@@ -300,9 +307,9 @@ public class VectorField
 
 							// For each chunk at the surface and at the thermocline
 							// for width of model
-							for (int x = 1; x < xSize - 1; x++)
+							for (int x = 0; x < xSize; x++)
 								// for breadth of model
-								for (int z = 1; z < zSize - 1; z++)
+								for (int z = 0; z < zSize; z++)
 									{
 										// xVel = xVel of neighbour below/above
 										velocityData[getIndex(x, 0, z)] = velocityData[getIndex(x, 1, z)];
@@ -311,7 +318,7 @@ public class VectorField
 							break;
 
 						case y:
-							// Prohibit motion up or down motion at the surface and at the thermocline
+							// Prohibit up or down (y) velocities at the surface and at the thermocline
 
 							// for the width of the model
 							for (int x = 0; x < xSize; x++)
@@ -337,9 +344,9 @@ public class VectorField
 
 							// For each chunk at the surface and at the thermocline
 							// for width of model
-							for (int x = 1; x < xSize - 1; x++)
+							for (int x = 0; x < xSize; x++)
 								// for breadth of model
-								for (int z = 1; z < zSize - 1; z++)
+								for (int z = 0; z < zSize; z++)
 									{
 										// zVel = zVel of neighbour below/above
 										velocityData[getIndex(x, 0, z)] = velocityData[getIndex(x, 1, z)];
@@ -351,9 +358,9 @@ public class VectorField
 							// for each chunk at the surface and at the thermocline
 
 							// for width of model
-							for (int x = 1; x < xSize - 1; x++)
+							for (int x = 0; x < xSize - 1; x++)
 								// for breadth of model
-								for (int z = 1; z < zSize - 1; z++)
+								for (int z = 0; z < zSize - 1; z++)
 									{
 										// axesVel = axesVel of neighbour below/above
 										velocityData[getIndex(x, 0, z)] = velocityData[getIndex(x, 1, z)];
@@ -412,13 +419,13 @@ public class VectorField
 								int xi0 = (int) xSrc;
 								int xi1 = xi0 + 1;
 								if (xi1 == xSize)
-									xi1 -= xSize;
+									xi1 = 0;
 
 								// The chunk where our z velocity originated and the chunk after it so we can interpolate
 								int zi0 = (int) zSrc;
 								int zi1 = zi0 + 1;
 								if (zi1 == zSize)
-									zi1 -= zSize;
+									zi1 = 0;
 
 								// if y-source is above surface or below thermocline, restrict to surface/thermocline
 								if (ySrc < 0.5)
@@ -465,40 +472,32 @@ public class VectorField
 		 */
 		private void project(double[] xV, double[] yV, double[] zV, double[] p, double[] div)
 			{
-				double h = 0.1;
+				double h = 1000.1;
 				// from just below the surface to the depth just above the thermocline
-				for (int y = 1; y < ySize - 1; y++)
-					// for width of model
-					for (int x = 0; x < xSize; x++)
-						// for breadth of model
-						for (int z = 0; z < zSize; z++)
-							{
-								int k = getIndex(x, y, z);
-								// Negative divergence
-								div[k] = -0.5 * h * (xV[k + 1] - xV[k - 1] + yV[k + xSize] - yV[k - xSize] + zV[k + layerSize] - zV[k - layerSize]);
-								// Pressure field
-								p[k] = 0;
-							}
+				for (int k = layerSize; k < div.length - layerSize; k++)
+					{
+						// int k = getIndex(x, y, z);
+						// Negative divergence
+						div[k] = -0.5 * h * (xV[k + 1] - xV[k - 1] + yV[k + xSize] - yV[k - xSize] + zV[k + layerSize] - zV[k - layerSize]);
+						// Pressure field
+						p[k] = 0;
+					}
 
 				// Fill in data for surface and thermocline layers that we previously missed
 				correctEdgeCases(Axis.undefined, div);
 				correctEdgeCases(Axis.undefined, p);
 
-				// Diverge flow at leading edge of currents
+				// Add vortices:
+				// Assign values to p
 				linearSolve(p, div, Axis.undefined);
-
-				// to the depth of the thermocline
-				for (int y = 1; y < ySize - 1; y++)
-					// for width of model
-					for (int x = 0; x < xSize; x++)
-						// for breadth of model
-						for (int z = 0; z < zSize; z++)
-							{
-								int k = getIndex(x, y, z);
-								xV[k] -= 0.5 * (p[k + 1] - p[k - 1]) / h;
-								yV[k] -= 0.5 * (p[k + xSize] - p[k - xSize]) / h;
-								zV[k] -= 0.5 * (p[k + layerSize] - p[k - layerSize]) / h;
-							}
+				// Make p values interact with velocity data
+				// from just below the surface to the depth just above the thermocline
+				for (int k = layerSize; k < div.length - layerSize; k++)
+					{
+						xV[k] -= 0.5 * (p[k + 1] - p[k - 1]) / h;
+						yV[k] -= 0.5 * (p[k + xSize] - p[k - xSize]) / h;
+						zV[k] -= 0.5 * (p[k + layerSize] - p[k - layerSize]) / h;
+					}
 
 				// Do one final check for all velocities to finalise the values
 				correctEdgeCases(Axis.x, xV);
