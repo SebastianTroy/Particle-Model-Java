@@ -6,11 +6,14 @@ import java.awt.event.MouseEvent;
 
 import tCode.RenderableObject;
 import tComponents.components.TButton;
+import tComponents.components.TCheckBox;
 import tComponents.components.TLabel;
 import tComponents.components.TMenu;
 import tComponents.components.TSlider;
 import tComponents.utils.events.TScrollEvent;
 import tools.NumTools;
+import tools.Rand;
+import tools.WindowTools;
 
 public class VectorFieldTester extends RenderableObject
 	{
@@ -33,30 +36,54 @@ public class VectorFieldTester extends RenderableObject
 		private final TSlider tickSpeedSlider = new TSlider(TSlider.HORIZONTAL, 0.01, 0.2);
 		private final TSlider iterationsSlider = new TSlider(TSlider.HORIZONTAL, 1, 20);
 		private final TSlider renderDensitySlider = new TSlider(TSlider.HORIZONTAL, 1, 10);
+		private final TSlider particleDiffusionSlider = new TSlider(TSlider.HORIZONTAL, 0, 10);
+		private final TSlider  particleBrightnessSlider = new TSlider(TSlider.HORIZONTAL, 0, 255);
 		private final TButton resetButton = new TButton("Reset"){@Override public void pressed(){refresh();}};
+		private final TCheckBox showParticleBox = new TCheckBox("Show Particles"){@Override public void pressed(){showParticles = isChecked();}};
+		private final TCheckBox showVectorsBox = new TCheckBox("Show Vectors"){@Override public void pressed(){showVectors = isChecked();}};
 
-		// ~DATA~VARIABLES @formatter:on
+		// ~VELOCITY~DATA~VARIABLES @formatter:on
 		private double[] xVel;
 		private double[] yVel;
 		private double[] xVelP;
 		private double[] yVelP;
+		private boolean showVectors = true;
 
 		private int xSize = NUM_CHUNKS;
 		private int ySize = NUM_CHUNKS;
+		private double fieldWidth;
+		private double fieldHeight;
 
-		double timestep = 0.1;
+		private double timestep = 0.1;
+
+		// ~PARTICLE~DATA~VARIABLES~
+		private Particle[] particles;
+		private double particleDiffusionRate = 0.5;
+		private boolean showParticles = false;
+		private Color particleColour = Color.BLUE;
 
 		@Override
 		public final void initiate()
 			{
 				chunkWidth = chunkHeight = Main.canvasHeight / NUM_CHUNKS;
 				halfChunkWidth = halfChunkHeight = chunkWidth / 2;
+				fieldWidth = chunkWidth * NUM_CHUNKS;
+				fieldHeight = chunkHeight * NUM_CHUNKS;
+
+				particles = new Particle[20000];
+				for (int i = 0; i < particles.length; i++)
+					particles[i] = new Particle(fieldWidth / 2, fieldHeight / 2);
 
 				menu = new TMenu(NUM_CHUNKS * chunkWidth, 0, Main.canvasWidth - (NUM_CHUNKS * chunkWidth), Main.canvasHeight, TMenu.VERTICAL);
 
 				renderDensitySlider.setValue(5);
 				tickSpeedSlider.setValue(0.01);
 				iterationsSlider.setValue(6);
+				particleDiffusionSlider.setValue(0.5);
+				particleBrightnessSlider.setValue(0);
+
+				showParticleBox.setChecked(true);
+				showVectorsBox.setChecked(true);
 
 				menu.add(new TLabel("<---------- Drag Mouse to create Currents"), false);
 				menu.add(new TLabel("Vector line Density"), false);
@@ -65,6 +92,12 @@ public class VectorFieldTester extends RenderableObject
 				menu.add(tickSpeedSlider);
 				menu.add(new TLabel("Iterations of linear solving"), false);
 				menu.add(iterationsSlider);
+				menu.add(new TLabel("Particle Diffusion"), false);
+				menu.add(particleDiffusionSlider);
+				menu.add(new TLabel("Particle Brightness"), false);
+				menu.add(particleBrightnessSlider);
+				menu.add(showVectorsBox, false);
+				menu.add(showParticleBox, false);
 				menu.add(resetButton);
 
 				add(menu);
@@ -78,6 +111,12 @@ public class VectorFieldTester extends RenderableObject
 
 				xVelP = xVel.clone();
 				yVelP = yVel.clone();
+
+				for (int i = 0; i < particles.length; i++)
+					{
+						particles[i].x = fieldWidth / 2;
+						particles[i].y = fieldHeight / 2;
+					}
 			}
 
 		@Override
@@ -89,6 +128,31 @@ public class VectorFieldTester extends RenderableObject
 					{
 						timer -= timePerTick;
 						stepSimulation();
+
+						Particle p;
+						for (int i = 0; i < particles.length; i++)
+							{
+								p = particles[i];
+
+								// wrap particles on edges
+								if (p.x < 0)
+									p.x += fieldWidth;
+								if (p.x >= fieldWidth)
+									p.x -= fieldWidth;
+
+								if (p.y < 0)
+									p.y += fieldHeight;
+								if (p.y >= fieldHeight - 1)
+									p.y -= fieldHeight;
+
+								// apply local velocity
+								p.x += getVelocity(p.x / chunkWidth, p.y / chunkHeight, Axis.x);
+								p.y += getVelocity(p.x / chunkWidth, p.y / chunkHeight, Axis.y);
+
+								// diffuse particles
+								p.x += Rand.double_(-particleDiffusionRate, particleDiffusionRate);
+								p.y += Rand.double_(-particleDiffusionRate, particleDiffusionRate);
+							}
 					}
 			}
 
@@ -98,11 +162,21 @@ public class VectorFieldTester extends RenderableObject
 				g.setColor(Color.BLACK);
 				g.fillRect(0, 0, Main.canvasWidth, Main.canvasHeight);
 
-				g.setColor(Color.WHITE);
-				for (int x = 0; x < NUM_CHUNKS; x += renderGap)
-					for (int y = 0; y < NUM_CHUNKS; y += renderGap)
-						g.drawLine((x * chunkWidth) + halfChunkWidth, (y * chunkHeight) + halfChunkHeight, (int) ((x + xVel[getK(x, y)]) * chunkWidth) + halfChunkWidth,
-								(int) ((y + yVel[getK(x, y)]) * chunkHeight) + halfChunkHeight);
+				if (showVectors)
+					{
+						g.setColor(Color.WHITE);
+						for (int x = 0; x < NUM_CHUNKS; x += renderGap)
+							for (int y = 0; y < NUM_CHUNKS; y += renderGap)
+								g.drawLine((x * chunkWidth) + halfChunkWidth, (y * chunkHeight) + halfChunkHeight, (int) ((x + xVel[getK(x, y)]) * chunkWidth) + halfChunkWidth,
+										(int) ((y + yVel[getK(x, y)]) * chunkHeight) + halfChunkHeight);
+					}
+
+				if (showParticles)
+					{
+						g.setColor(particleColour);
+						for (Particle p : particles)
+							g.drawLine(p.getX(), p.getY(), p.getX(), p.getY());
+					}
 			}
 
 		@Override
@@ -163,6 +237,10 @@ public class VectorFieldTester extends RenderableObject
 					renderGap = (int) e.getScrollValue();
 				else if (e.getSource() == tickSpeedSlider)
 					timePerTick = e.getScrollValue();
+				else if (e.getSource() == particleDiffusionSlider)
+					particleDiffusionRate = particleDiffusionSlider.getValue();
+				else if (e.getSource() == particleBrightnessSlider)
+					particleColour = new Color((int) particleBrightnessSlider.getValue(), (int) particleBrightnessSlider.getValue(), 255);
 			}
 
 		private final void stepSimulation()
@@ -185,6 +263,54 @@ public class VectorFieldTester extends RenderableObject
 		private final int getK(int x, int y)
 			{
 				return x + y * xSize;
+			}
+
+		private final double getVelocity(double x, double y, Axis a)
+			{
+				x *= 0.99;
+				y *= 0.99;
+
+				double[] velocity = null;
+
+				switch (a)
+					{
+						case x:
+							velocity = xVel;
+							break;
+						case y:
+							velocity = yVel;
+							break;
+
+						case undefined:
+						default:
+							WindowTools.debugWindow("Cannot get vector without spoecifying an axis");
+					}
+
+				int xi0 = (int) x;
+				int xi1 = xi0 + 1;
+				if (xi1 == xSize)
+					xi1 = 0;
+
+				// if y-source is above surface or below thermocline, restrict to surface/thermocline
+				if (y < 0.5)
+					y = 0.5;
+				else if (y >= ySize - 1.5)
+					y = ySize - 1.5;
+
+				int yi0 = (int) y;
+				int yi1 = yi0 + 1;
+
+				// Linear interpolation factors. Ex: 0.6 and 0.4
+				double xProp1 = x - xi0;
+				double xProp0 = 1.0 - xProp1;
+				double yProp1 = y - yi0;
+				double yProp0 = 1.0 - yProp1;
+
+				/*
+				 * Here we find the velocity at a point in the middle of 8 chunks. We basically interpolate the velocity between all of the yAxis neighbours,
+				 * then we interpolate those values along the x axis, then finally, to combine them into a point we combine those velocities along the z axis.
+				 */
+				return (xProp0 * (yProp0 * velocity[getK(xi0, yi0)] + yProp1 * velocity[getK(xi0, yi1)]) + xProp1 * (yProp0 * velocity[getK(xi1, yi0)] + yProp1 * velocity[getK(xi1, yi1)]));
 			}
 
 		private void setBounds(Axis axis, double[] d)
@@ -238,7 +364,7 @@ public class VectorFieldTester extends RenderableObject
 		private void advect(double[] dest, double[] src, double[] xVelocity, double[] yVelocity, Axis axis, double dt)
 			{
 				// for non top/bottom edge chunks
-				for (int y = 1; y < ySize -1; y++)
+				for (int y = 1; y < ySize - 1; y++)
 					{
 						int yIndex = y * xSize;
 						// for all chunks within above range
@@ -339,5 +465,26 @@ public class VectorFieldTester extends RenderableObject
 							w = 1.5;
 					}
 				setBounds(axis, dest);
+			}
+
+		private class Particle
+			{
+				double x, y;
+
+				private Particle(double x, double y)
+					{
+						this.x = x;
+						this.y = y;
+					}
+
+				private int getX()
+					{
+						return (int) x;
+					}
+
+				private int getY()
+					{
+						return (int) y;
+					}
 			}
 	}
