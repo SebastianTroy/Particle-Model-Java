@@ -198,7 +198,7 @@ public class VectorField
 				// if y-source is above surface or below thermocline, restrict to surface/thermocline
 				if (y < 0.5)
 					y = 0.5;
-				else if (y > ySize - 1.5)
+				else if (y >= ySize - 1.5)
 					y = ySize - 1.5;
 
 				int yi0 = (int) y;
