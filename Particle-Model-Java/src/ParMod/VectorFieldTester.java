@@ -2,6 +2,7 @@ package ParMod;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 
 import tCode.RenderableObject;
@@ -11,6 +12,7 @@ import tComponents.components.TLabel;
 import tComponents.components.TMenu;
 import tComponents.components.TSlider;
 import tComponents.utils.events.TScrollEvent;
+import tools.DrawTools;
 import tools.NumTools;
 import tools.Rand;
 import tools.WindowTools;
@@ -30,6 +32,8 @@ public class VectorFieldTester extends RenderableObject
 
 		private int renderGap = 5;
 		private double timer = 0, timePerTick = 0.01;
+
+		boolean arrows = false;
 
 		// ~MENU~VARIABLES @formatter:off
 		private TMenu menu;
@@ -167,8 +171,12 @@ public class VectorFieldTester extends RenderableObject
 						g.setColor(Color.WHITE);
 						for (int x = 0; x < NUM_CHUNKS; x += renderGap)
 							for (int y = 0; y < NUM_CHUNKS; y += renderGap)
-								g.drawLine((x * chunkWidth) + halfChunkWidth, (y * chunkHeight) + halfChunkHeight, (int) ((x + xVel[getK(x, y)]) * chunkWidth) + halfChunkWidth,
-										(int) ((y + yVel[getK(x, y)]) * chunkHeight) + halfChunkHeight);
+								if (arrows)
+									DrawTools.drawArrow((x * chunkWidth) + halfChunkWidth, (y * chunkHeight) + halfChunkHeight, (int) ((x + xVel[getK(x, y)]) * chunkWidth) + halfChunkWidth,
+											(int) ((y + yVel[getK(x, y)]) * chunkHeight) + halfChunkHeight, g, 4);
+								else
+									g.drawLine((x * chunkWidth) + halfChunkWidth, (y * chunkHeight) + halfChunkHeight, (int) ((x + xVel[getK(x, y)]) * chunkWidth) + halfChunkWidth,
+											(int) ((y + yVel[getK(x, y)]) * chunkHeight) + halfChunkHeight);
 					}
 
 				if (showParticles)
@@ -228,6 +236,13 @@ public class VectorFieldTester extends RenderableObject
 							this.xVel[index] += xVel * distanceModifier;
 							this.yVel[index] += yVel * distanceModifier;
 						}
+			}
+
+		@Override
+		public final void keyPressed(KeyEvent e)
+			{
+				if (e.getKeyChar() == 'a')
+					arrows = !arrows;
 			}
 
 		@Override

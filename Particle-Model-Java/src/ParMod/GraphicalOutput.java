@@ -1,9 +1,13 @@
 package ParMod;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.event.KeyEvent;
+import java.util.Arrays;
+import java.util.Collections;
 
 import ParMod.VectorField.Axis;
 import tComponents.components.TScrollBar;
@@ -18,6 +22,7 @@ public class GraphicalOutput
 		// Constants that represent viewing modes
 		public static final int VIEW_PARTICLES = 0;
 		public static final int VIEW_CURRENTS = 1;
+		public static final int VIEW_GRAPH = 2;
 
 		// This variable denotes the current viewing mode
 		int currentViewMode = VIEW_PARTICLES;
@@ -31,6 +36,10 @@ public class GraphicalOutput
 		//
 		private TScrollBar graphScroller = new TScrollBar(0, 0, Main.canvasHeight, Main.canvasHeight, true, new Rectangle(0, 0, Main.canvasWidth, Main.canvasHeight));
 		private boolean usingScrollBar = false;
+		
+		// Used to draw dotted lines for the graph mode
+		Stroke frontOfCubeStroke = new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0);
+		Stroke backOfCubeStroke = new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
 
 		public GraphicalOutput()
 			{
@@ -110,6 +119,11 @@ public class GraphicalOutput
 
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 				// Draw the parts of the wire frame for water column that are behind everything
+				// draw them dotted if graph mode is on
+				Stroke oldStroke = g.getStroke();
+				if (currentViewMode == VIEW_GRAPH)
+					g.setStroke(backOfCubeStroke);
+				
 				g.setColor(Color.GRAY);
 				// Top left
 				g.drawLine(graphX, graphY, graphX + roundedGraphWidth, graphY - graphTilt);
@@ -121,6 +135,10 @@ public class GraphicalOutput
 				g.drawLine(graphX, graphY + (int) graphHeight, graphX + roundedGraphWidth, graphY - graphTilt + (int) graphHeight);
 				// Bottom right
 				g.drawLine(graphX + 2 * roundedGraphWidth, graphY + (int) graphHeight, graphX + roundedGraphWidth, graphY - graphTilt + (int) graphHeight);
+				
+				// If graph mode is on, return line drawing to normal
+				if (currentViewMode == VIEW_GRAPH)
+					g.setStroke(oldStroke);
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 				// This switch statement checks to see which viewing mode is selected and then only draws the appropriate information.
@@ -164,10 +182,34 @@ public class GraphicalOutput
 
 												int velocityX = (int) ((xSpacing * (x + 10 * xVel) + (0.5 * xSpacing)) + (xSpacing * (z + 10 * zVel) + (0.5 * xSpacing))) + graphX;
 												int velocityY = (int) ((ySpacing * (y + 10 * yVel) + (0.5 * ySpacing)) - (tiltSpacing * (x + 10 * xVel) + (0.5 * xSpacing)) + (tiltSpacing
-														* (z + 10 * zVel) + (0.5 * xSpacing))) + graphY;
+														* (z + 10 * zVel) + (0.5 * xSpacing)))
+														+ graphY;
 
 												g.drawLine(screenX, screenY, velocityX, velocityY);
 											}
+								break; // Once that is drawn, ignore any further options
+							}
+						case VIEW_GRAPH:
+							{
+								for (Particle p : Main.sim.particles)
+									p.calculateColour();
+
+								Collections.sort(Main.sim.particles);
+
+								for (Particle p : Main.sim.particles)
+									{
+										g.setColor(new Color(p.colour, p.colour, p.colour));
+										/*
+										 * The simulation is drawn as if looking in through an edge of the water column, and slightly from above. The screenX
+										 * and screenY variables are used to convert the particles 3D location in the simulation into 2D coordinates on the
+										 * graph.
+										 */
+										int screenX = (int) Math.round(((graphWidth * p.x) + (graphWidth * p.z)) + graphX);
+										int screenY = (int) ((graphHeight / Main.sim.depth * p.y) - (graphTilt * p.x) + (graphTilt * p.z)) + graphY;
+
+										// Draw the particle as a single pixel, a particle is drawn over all previous particles regardless of actual position.
+										g.drawLine(screenX, screenY, screenX, screenY);
+									}
 								break; // Once that is drawn, ignore any further options
 							}
 
@@ -175,6 +217,10 @@ public class GraphicalOutput
 
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 				// Draw the parts of the wire frame of the water column that are in front of everything
+				
+				if (currentViewMode == VIEW_GRAPH)
+					g.setStroke(frontOfCubeStroke);
+				
 				g.setColor(Color.LIGHT_GRAY);
 				// Top left
 				g.drawLine(graphX, graphY, graphX + roundedGraphWidth, graphY + graphTilt);
@@ -190,6 +236,8 @@ public class GraphicalOutput
 				g.drawLine(graphX, graphY + (int) graphHeight, graphX + roundedGraphWidth, graphY + graphTilt + (int) graphHeight);
 				// Bottom right
 				g.drawLine(graphX + (2 * roundedGraphWidth), graphY + (int) graphHeight, graphX + roundedGraphWidth, graphY + graphTilt + (int) graphHeight);
+				
+				g.setStroke(oldStroke);
 				// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			}
 
@@ -204,6 +252,9 @@ public class GraphicalOutput
 							return; // Once that is done, ignore the rest of the options
 						case '2':
 							Main.graphicalOutput.currentViewMode = GraphicalOutput.VIEW_CURRENTS;
+							return; // Once that is done, ignore the rest of the options
+						case '3':
+							Main.graphicalOutput.currentViewMode = GraphicalOutput.VIEW_GRAPH;
 							return; // Once that is done, ignore the rest of the options
 					}
 			}
