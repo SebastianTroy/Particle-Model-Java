@@ -41,9 +41,9 @@ public class ParameterInput extends RenderableObject
 
 				// Simulation parameters
 				depthNumberField = new TNumberField(0, 0, 125, 25, 4); // limited to 4 digits long
-				depthNumberField.setText("50");
+				depthNumberField.setText("10");
 				mixedDepthNumberField = new TNumberField(0, 0, 125, 25, 4); // limited to 4 digits long
-				mixedDepthNumberField.setText("25");
+				mixedDepthNumberField.setText("5");
 				paceNumberField = new TNumberField(0, 0, 125, 25, 3); // limited to 3 digits long
 				paceNumberField.setText("20");
 

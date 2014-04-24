@@ -33,7 +33,7 @@ public class VectorFieldTester extends RenderableObject
 		private int renderGap = 5;
 		private double timer = 0, timePerTick = 0.01;
 
-		boolean arrows = false;
+		boolean arrows = true;
 
 		// ~MENU~VARIABLES @formatter:off
 		private TMenu menu;

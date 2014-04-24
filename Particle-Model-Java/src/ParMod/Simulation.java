@@ -83,9 +83,6 @@ public class Simulation extends RenderableObject
 				// Calls a method in the graphical output class that checks for user interaction with the simulation
 				Main.graphicalOutput.tick(secondsPassed);
 
-				if (!Main.input.getKeyState(KeyEvent.VK_T))
-					return;
-
 				// TODO remove this for final simulation
 				double pace = this.pace * secondsPassed * 5; // Slows down the simulation so that it can be observed during development
 
