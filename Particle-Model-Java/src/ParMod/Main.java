@@ -6,17 +6,10 @@ package ParMod;
 import tCode.TCode;
 
 /**
- * 
  * @author Sebastian Troy
  */
 public class Main extends TCode
 	{
-		/*
-		 * These classes are here so that they can be easily accessed by any part of the simulation.
-		 */
-		static Simulation sim; // Simulation not initialised until parameters are chosen.
-		static GraphicalOutput graphicalOutput;
-
 		/**
 		 * This is the program entry.
 		 */
@@ -38,17 +31,17 @@ public class Main extends TCode
 		public Main(boolean framed, boolean resizable)
 			{
 				super(framed, resizable);
-				
+
 				programName = "Particle Model";
 				versionNumber = "alpha";
 				frame.simplifyTitle(false);
-				
+
 				frameWidth = 900;
 				frameHeight = 700;
 
 				DEBUG = true;
 				FORCE_SINGLE_THREAD = true;
 
-				begin(new ParameterInput());
+				begin(new VectorFieldTester());
 			}
 	}
