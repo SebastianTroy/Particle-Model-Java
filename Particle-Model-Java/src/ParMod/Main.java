@@ -1,5 +1,9 @@
 package ParMod;
 
+import java.awt.image.BufferedImage;
+
+import javax.imageio.ImageIO;
+
 /*
  * TCode is a library that takes care of user input and program flow, it also integrates with TComponents, which I use for buttons, text fields and menus.
  */
@@ -32,9 +36,10 @@ public class Main extends TCode
 			{
 				super(framed, resizable);
 
-				programName = "Particle Model";
+				programName = "FluidApp by Sebastian Troy";
 				versionNumber = "1.0";
 				frame.simplifyTitle(true);
+				frame.setIconImage(loadImage("wave.png"));
 
 				frameWidth = 900;
 				frameHeight = 700;
@@ -42,5 +47,18 @@ public class Main extends TCode
 				FORCE_SINGLE_THREAD = true;
 
 				begin(new VectorFieldTester());
+			}
+		
+		public static BufferedImage loadImage(String name)
+			{
+				try
+					{
+						return ImageIO.read(Main.class.getResource("/" + name));
+					}
+				catch (Exception e)
+					{
+						e.printStackTrace();
+						return new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+					}
 			}
 	}
