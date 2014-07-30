@@ -2,7 +2,6 @@ package ParMod;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 
 import tCode.RenderableObject;
@@ -33,6 +32,7 @@ public class VectorFieldTester extends RenderableObject
 		private int renderGap = 5;
 		private double timer = 0, timePerTick = 0.01;
 
+		// Whether the vectors are drawn with arrowheads or not
 		boolean arrows = true;
 
 		// ~MENU~VARIABLES @formatter:off
@@ -45,6 +45,7 @@ public class VectorFieldTester extends RenderableObject
 		private final TButton resetButton = new TButton("Reset"){@Override public void pressed(){refresh();}};
 		private final TCheckBox showParticleBox = new TCheckBox("Show Particles"){@Override public void pressed(){showParticles = isChecked();}};
 		private final TCheckBox showVectorsBox = new TCheckBox("Show Vectors"){@Override public void pressed(){showVectors = isChecked();}};
+		private final TCheckBox showArrowHeadsBox = new TCheckBox("Show Vectors"){@Override public void pressed(){arrows = isChecked();}};
 
 		// ~VELOCITY~DATA~VARIABLES @formatter:on
 		private double[] xVel;
@@ -88,6 +89,7 @@ public class VectorFieldTester extends RenderableObject
 
 				showParticleBox.setChecked(true);
 				showVectorsBox.setChecked(true);
+				showArrowHeadsBox.setChecked(true);
 
 				menu.add(new TLabel("<---------- Drag Mouse to create Currents"), false);
 				menu.add(new TLabel("Vector line Density"), false);
@@ -102,6 +104,7 @@ public class VectorFieldTester extends RenderableObject
 				menu.add(particleBrightnessSlider);
 				menu.add(showVectorsBox, false);
 				menu.add(showParticleBox, false);
+				menu.add(showArrowHeadsBox, false);
 				menu.add(resetButton);
 
 				add(menu);
@@ -236,13 +239,6 @@ public class VectorFieldTester extends RenderableObject
 							this.xVel[index] += xVel * distanceModifier;
 							this.yVel[index] += yVel * distanceModifier;
 						}
-			}
-
-		@Override
-		public final void keyPressed(KeyEvent e)
-			{
-				if (e.getKeyChar() == 'a')
-					arrows = !arrows;
 			}
 
 		@Override
