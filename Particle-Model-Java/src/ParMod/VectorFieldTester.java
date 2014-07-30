@@ -45,7 +45,7 @@ public class VectorFieldTester extends RenderableObject
 		private final TButton resetButton = new TButton("Reset"){@Override public void pressed(){refresh();}};
 		private final TCheckBox showParticleBox = new TCheckBox("Show Particles"){@Override public void pressed(){showParticles = isChecked();}};
 		private final TCheckBox showVectorsBox = new TCheckBox("Show Vectors"){@Override public void pressed(){showVectors = isChecked();}};
-		private final TCheckBox showArrowHeadsBox = new TCheckBox("Show Vectors"){@Override public void pressed(){arrows = isChecked();}};
+		private final TCheckBox showArrowHeadsBox = new TCheckBox("Show Arrowheads"){@Override public void pressed(){arrows = isChecked();}};
 
 		// ~VELOCITY~DATA~VARIABLES @formatter:on
 		private double[] xVel;
