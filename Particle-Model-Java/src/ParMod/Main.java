@@ -42,7 +42,7 @@ public class Main extends TCode
 				frame.setIconImage(loadImage("wave.png"));
 
 				frameWidth = 900;
-				frameHeight = 700;
+				frameHeight = 630;
 
 				FORCE_SINGLE_THREAD = true;
 
