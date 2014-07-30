@@ -26,10 +26,10 @@ public class VectorFieldTester extends RenderableObject
 				x, y, undefined
 			}
 
-		private static final int NUM_CHUNKS = 200, MAX_CURRENT = 20;
+		private static final int NUM_CHUNKS = 100, MAX_CURRENT = 20;
 		private int chunkWidth, chunkHeight, halfChunkWidth, halfChunkHeight;
 
-		private int renderGap = 5;
+		private int renderGap = 2;
 		private double timer = 0, timePerTick = 0.01;
 
 		// Whether the vectors are drawn with arrowheads or not
@@ -39,7 +39,7 @@ public class VectorFieldTester extends RenderableObject
 		private TMenu menu;
 		private final TSlider tickSpeedSlider = new TSlider(TSlider.HORIZONTAL, 0.01, 0.2);
 		private final TSlider iterationsSlider = new TSlider(TSlider.HORIZONTAL, 1, 20);
-		private final TSlider renderDensitySlider = new TSlider(TSlider.HORIZONTAL, 1, 10);
+		private final TSlider vectorLineRenderDensitySlider = new TSlider(TSlider.HORIZONTAL, 1, 10);
 		private final TSlider particleDiffusionSlider = new TSlider(TSlider.HORIZONTAL, 0, 10);
 		private final TSlider  particleBrightnessSlider = new TSlider(TSlider.HORIZONTAL, 0, 255);
 		private final TButton resetButton = new TButton("Reset"){@Override public void pressed(){refresh();}};
@@ -81,7 +81,7 @@ public class VectorFieldTester extends RenderableObject
 
 				menu = new TMenu(NUM_CHUNKS * chunkWidth, 0, Main.canvasWidth - (NUM_CHUNKS * chunkWidth), Main.canvasHeight, TMenu.VERTICAL);
 
-				renderDensitySlider.setValue(5);
+				vectorLineRenderDensitySlider.setValue(2);
 				tickSpeedSlider.setValue(0.01);
 				iterationsSlider.setValue(6);
 				particleDiffusionSlider.setValue(0.5);
@@ -93,7 +93,7 @@ public class VectorFieldTester extends RenderableObject
 
 				menu.add(new TLabel("<---------- Drag Mouse to create Currents"), false);
 				menu.add(new TLabel("Vector line Density"), false);
-				menu.add(renderDensitySlider);
+				menu.add(vectorLineRenderDensitySlider);
 				menu.add(new TLabel("Time Between Calculations (s)"), false);
 				menu.add(tickSpeedSlider);
 				menu.add(new TLabel("Iterations of linear solving"), false);
@@ -244,7 +244,7 @@ public class VectorFieldTester extends RenderableObject
 		@Override
 		public final void tScrollEvent(TScrollEvent e)
 			{
-				if (e.getSource() == renderDensitySlider)
+				if (e.getSource() == vectorLineRenderDensitySlider)
 					renderGap = (int) e.getScrollValue();
 				else if (e.getSource() == tickSpeedSlider)
 					timePerTick = e.getScrollValue();
@@ -273,6 +273,16 @@ public class VectorFieldTester extends RenderableObject
 
 		private final int getK(int x, int y)
 			{
+				if (x < 0)
+					x += xSize;
+				else if (x >= xSize)
+					x -= xSize;
+
+				if (y < 0)
+					y += ySize;
+				else if (y >= ySize)
+					y -= ySize;
+
 				return x + y * xSize;
 			}
 

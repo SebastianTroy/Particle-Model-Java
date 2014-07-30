@@ -33,13 +33,12 @@ public class Main extends TCode
 				super(framed, resizable);
 
 				programName = "Particle Model";
-				versionNumber = "alpha";
-				frame.simplifyTitle(false);
+				versionNumber = "1.0";
+				frame.simplifyTitle(true);
 
 				frameWidth = 900;
 				frameHeight = 700;
 
-				DEBUG = true;
 				FORCE_SINGLE_THREAD = true;
 
 				begin(new VectorFieldTester());
