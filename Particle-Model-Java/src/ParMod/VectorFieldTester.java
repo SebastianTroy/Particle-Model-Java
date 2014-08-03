@@ -2,6 +2,7 @@ package ParMod;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 
 import tCode.RenderableObject;
@@ -33,7 +34,7 @@ public class VectorFieldTester extends RenderableObject
 		private double timer = 0, timePerTick = 0.01;
 
 		// Whether the vectors are drawn with arrowheads or not
-		boolean arrows = true;
+		boolean arrows = true, paused = false;
 
 		// ~MENU~VARIABLES @formatter:off
 		private TMenu menu;
@@ -46,6 +47,7 @@ public class VectorFieldTester extends RenderableObject
 		private final TCheckBox showParticleBox = new TCheckBox("Show Particles"){@Override public void pressed(){showParticles = isChecked();}};
 		private final TCheckBox showVectorsBox = new TCheckBox("Show Vectors"){@Override public void pressed(){showVectors = isChecked();}};
 		private final TCheckBox showArrowHeadsBox = new TCheckBox("Show Arrowheads"){@Override public void pressed(){arrows = isChecked();}};
+		private final TCheckBox pauseBox = new TCheckBox("Paused [spacebar]"){@Override public void pressed(){paused = isChecked();}};
 
 		// ~VELOCITY~DATA~VARIABLES @formatter:on
 		private double[] xVel;
@@ -105,6 +107,7 @@ public class VectorFieldTester extends RenderableObject
 				menu.add(showVectorsBox, false);
 				menu.add(showParticleBox, false);
 				menu.add(showArrowHeadsBox, false);
+				menu.add(pauseBox, false);
 				menu.add(resetButton);
 
 				add(menu);
@@ -129,6 +132,9 @@ public class VectorFieldTester extends RenderableObject
 		@Override
 		public void tick(double secondsPassed)
 			{
+				if (paused)
+					return;
+
 				timer += secondsPassed;
 
 				while (timer > timePerTick)
@@ -191,9 +197,19 @@ public class VectorFieldTester extends RenderableObject
 			}
 
 		@Override
+		public final void keyPressed(KeyEvent e)
+			{
+				if (e.getKeyChar() == ' ')
+					{
+						paused = !paused;
+						pauseBox.setChecked(paused);
+					}
+			}
+
+		@Override
 		public final void mouseDragged(MouseEvent e)
 			{
-				if (e.getX() < 0 || e.getY() < 0 || e.getX() > (NUM_CHUNKS - 1) * chunkWidth || e.getY() > (NUM_CHUNKS - 1) * chunkHeight)
+				if (paused || e.getX() < 0 || e.getY() < 0 || e.getX() > (NUM_CHUNKS - 1) * chunkWidth || e.getY() > (NUM_CHUNKS - 1) * chunkHeight)
 					return;
 
 				int radius = NUM_CHUNKS / 10;
