@@ -37,8 +37,7 @@ public class Main extends TCode
 				super(framed, resizable);
 
 				programName = "FluidApp by Sebastian Troy";
-				versionNumber = "1.0";
-				frame.simplifyTitle(true);
+				versionNumber = "1.1";
 				frame.setIconImage(loadImage("wave.png"));
 
 				frameWidth = 900;
